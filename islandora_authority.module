@@ -1,0 +1,206 @@
+<?php
+/**
+ * Implementation of hook_elements()
+ * @return array element definitions
+ */
+function islandora_authority_elements() {
+  return array(
+    'authorityelement' => array(
+      '#input' => TRUE,
+      '#process' => array('islandora_authority_element_expansion'),
+      '#attributes' => array(''),
+      '#subfields' => array(
+        'eaccpf_name_forename_et' => array(
+          //'#fieldname' => 'eaccpf_name_forename_et',
+          '#input' => TRUE,
+          '#type' => 'authoritytextfield',
+          '#title' => 'Forename'
+        ),
+        'eaccpf_name_surname_et' => array(
+          //'#fieldname' => 'eaccpf_name_surname_et',
+          '#input' => TRUE,
+          '#type' => 'authoritytextfield',
+          '#title' => 'Surname' 
+        ),
+        'PID' => array(
+          '#input' => TRUE,
+          '#type' => 'hidden'
+        )
+      )
+    ),
+    'authoritytextfield' => array(
+      '#input' => TRUE,
+      '#size' => 60, 
+      '#maxlength' => 128, 
+      '#autocomplete_path' => 'islandora/authority', 
+      '#process' => array('form_expand_ahah'))
+  );
+}
+
+function islandora_authority_menu() {
+  return array(
+    'islandora/authority' => array(
+      'page callback' => 'islandora_authority_autocomplete',
+      'access callback' => TRUE
+    )
+  );
+}
+
+function _build_match(&$results, &$solr_doc, &$hl_field) {
+  $map = array(
+    'eaccpf_name_surname_et' => '!last',
+    'eaccpf_name_forename_et' => '!first'
+  );
+  $mapped = array(
+    '!first' => $solr_doc->eaccpf_name_forename_et,
+    '!last' => $solr_doc->eaccpf_name_surname_et
+  );
+  $mapped[$map[$hl_field]] = $results->highlighting->{$solr_doc->PID}->{$hl_field}[0];
+  $toReturn = array(
+    'full-display' => t('!last, !first', $mapped),
+    'eaccpf_name_forename_et' => $solr_doc->eaccpf_name_forename_et,
+    'eaccpf_name_surname_et' => $solr_doc->eaccpf_name_surname_et,
+    'alts' => array() 
+  );
+    
+  
+  
+  //'alts' would be built from another set of fields in the same document,
+  //  including the an XML id within the doc
+  $toReturn['alts'] = array();
+  
+  return $toReturn;
+}
+
+//Need to take which field to highlight as a parameter
+function islandora_authority_autocomplete($field = 'eaccpf_complete_et', $string = '') {
+  static $solr = NULL;
+  
+  if (is_null($solr)) {
+    module_load_include('php', 'islandora_solr_search', 'SolrPhpClient/Apache/Solr/Service');
+    $solrUrl = variable_get('islandora_solr_search_block_url', 'http://localhost:8080/solr/');
+    $pathParts = parse_url($solrUrl);
+    $solr = new Apache_Solr_Service($pathParts['host'], $pathParts['port'], $pathParts['path']);
+    $solr->setCreateDocuments(FALSE);
+  }
+  
+  $matches = array();
+  $results = $solr->search($string, 0, 10, array(
+          'qf' => $field,
+          'fl' => implode(',', array(
+            'PID',
+            $field,
+            'eaccpf_name_forename_et',
+            'eaccpf_name_surname_et',
+            'eaccpf_complete_et')),
+          'qt' => variable_get('eac_cpf_completer_handler', 'dismax'),
+          'hl' => 'true',
+          'hl.fl' => '' //Not needed, should use qf fields by default.
+      )
+  );
+  $matches = array();
+  foreach ($results->response->docs as &$doc) {
+      $match =& $matches[$doc->PID];
+      $match = _build_match($results, $doc, $field);
+  }
+  print drupal_json($matches);
+  exit();
+}
+
+/*
+ * Exactly the same as drupal form_clean_id, EXCEPT we don't wipe out underscores...
+ */
+function islandora_authority_clean_form_id($id, $flush = FALSE) {
+  static $seen_ids = array();
+
+  if ($flush) {
+    $seen_ids = array();
+    form_clean_id($id, $flush);
+    return;
+  }
+  
+  if (strpos($id, '_') !== FALSE) {
+    return form_clean_id($id);
+  }
+  $id = str_replace(array('][', ' '), '-', $id);
+
+  // Ensure IDs are unique. The first occurrence is held but left alone.
+  // Subsequent occurrences get a number appended to them. This incrementing
+  // will almost certainly break code that relies on explicit HTML IDs in
+  // forms that appear more than once on the page, but the alternative is
+  // outputting duplicate IDs, which would break JS code and XHTML
+  // validity anyways. For now, it's an acceptable stopgap solution.
+  if (isset($seen_ids[$id])) {
+    $id = $id . '-' . $seen_ids[$id]++;
+  }
+  else {
+    $seen_ids[$id] = 1;
+  }
+
+  return $id;
+}
+
+function islandora_authority_element_expansion($element) {
+  foreach ($element['#subfields'] as $key => $values) {
+    if (!isset($element[$key])) {
+      $id = array_merge($element['#parents'], array('-' . $key));
+      $element[$key] = array_merge($values, array(
+        '#parents' => $element['#parents'],
+        '#autocomplete_path' => $element['#autocomplete_path'] . '/' . urlencode($key),
+        '#id' => form_clean_id('edit-' . implode('-', $id)),
+        '#attributes' => array('field' => $key)
+      ));
+    }
+  }
+  dsm($element);
+  return $element;
+}
+
+function islandora_authority_theme() {
+  return array(
+    'authoritytextfield' => array(),
+    'authorityelement' => array()
+  );
+}
+
+function theme_authoritytextfield($element) {
+  $size = empty($element['#size']) ? '' : ' size="'. $element['#size'] .'"';
+  $maxlength = empty($element['#maxlength']) ? '' : ' maxlength="'. $element['#maxlength'] .'"';
+  $class = array('form-text');
+  $extra = '';
+  $output = '';
+  dsm($element);
+  if ($element['#autocomplete_path'] && menu_valid_path(array('link_path' => $element['#autocomplete_path'].''))) {
+    drupal_add_js(drupal_get_path('module', 'islandora_authority').'/js/autocomplete.js', 'module');
+    $class[] = 'form-islandora_authority_autocomplete';
+    $extra =  '<input class="islandora_authority_autocomplete" type="hidden" id="'. $element['#id'] .'-autocomplete" value="'. check_url(url($element['#autocomplete_path'], array('absolute' => TRUE))) .'" disabled="disabled" />';
+  }
+  _form_set_class($element, $class);
+
+  if (isset($element['#field_prefix'])) {
+    $output .= '<span class="field-prefix">'. $element['#field_prefix'] .'</span> ';
+  }
+
+  $output .= '<input type="text"'. $maxlength .' name="'. $element['#name'] .'" id="'. $element['#id'] .'"'. $size .' value="'. check_plain($element['#value']) .'"'. drupal_attributes($element['#attributes']) .' />';
+
+  if (isset($element['#field_suffix'])) {
+    $output .= ' <span class="field-suffix">'. $element['#field_suffix'] .'</span>';
+  }
+
+  return theme('form_element', $element, $output) . $extra;
+}
+
+function theme_authorityelement($element) {
+  $class = 'form-authority_element';
+  if (isset($element['#attributes']['class'])) {
+    $class .= ' '. $element['#attributes']['class'];
+  }
+  $element['#children'] = '<div class="'. $class .'">'. (!empty($element['#children']) ? $element['#children'] : '') .'</div>';
+  if ($element['#title'] || $element['#description']) {
+    unset($element['#id']);
+    return theme('form_element', $element, $element['#children']);
+  }
+  else {
+    return $element['#children'];
+  }
+}
