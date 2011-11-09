@@ -4,20 +4,20 @@
  * Attaches the autocomplete behavior to all required fields
  */
 
-/*if (typeof Drupal.behaviors.islandora_authority == 'undefined') {
-  Drupal.behaviors.islandora_authority = new Object();
-}*/
+if (typeof Drupal.settings.islandora_authority == 'undefined') {
+  Drupal.settings.islandora_authority = new Object();
+}
 Drupal.behaviors.islandora_authority_autocomplete = function (context) {
   var acdb = [];
   $('input.islandora_authority_autocomplete:not(.islandora_authority_autocomplete-processed)', context).each(function () {
     var uri = this.value;
     if (!acdb[uri]) {
-      acdb[uri] = new Drupal.behaviors.islandora_authority_ACDB(uri);
+      acdb[uri] = new Drupal.settings.islandora_authority.ACDB(uri);
     }
     var input = $('#' + this.id.substr(0, this.id.length - 13))
       .attr('autocomplete', 'OFF')[0];
-    $(input.form).submit(Drupal.behaviors.islandora_authority_autocompleteSubmit);
-    new Drupal.behaviors.islandora_authority_jsAC(input, acdb[uri]);
+    $(input.form).submit(Drupal.settings.islandora_authority.autocompleteSubmit);
+    new Drupal.settings.islandora_authority.jsAC(input, acdb[uri]);
     $(this).addClass('islandora_authority_autocomplete-processed');
   });
 };
@@ -26,8 +26,8 @@ Drupal.behaviors.islandora_authority_autocomplete = function (context) {
  * Prevents the form from submitting if the suggestions popup is open
  * and closes the suggestions popup when doing so.
  */
-Drupal.behaviors.islandora_authority_autocompleteSubmit = function () {
-  return $('#autocomplete').each(function () {
+Drupal.settings.islandora_authority.autocompleteSubmit = function () {
+  return $('#islandora_authority_autocomplete').each(function () {
     this.owner.hidePopup();
   }).size() == 0;
 };
@@ -35,7 +35,7 @@ Drupal.behaviors.islandora_authority_autocompleteSubmit = function () {
 /**
  * An AutoComplete object
  */
-Drupal.behaviors.islandora_authority_jsAC = function (input, db) {
+Drupal.settings.islandora_authority.jsAC = function (input, db) {
   var ac = this;
   this.input = input;
   this.db = db;
@@ -49,7 +49,7 @@ Drupal.behaviors.islandora_authority_jsAC = function (input, db) {
 /**
  * Handler for the "keydown" event
  */
-Drupal.behaviors.islandora_authority_jsAC.prototype.onkeydown = function (input, e) {
+Drupal.settings.islandora_authority.jsAC.prototype.onkeydown = function (input, e) {
   if (!e) {
     e = window.event;
   }
@@ -74,7 +74,7 @@ Drupal.behaviors.islandora_authority_jsAC.prototype.onkeydown = function (input,
 /**
  * Handler for the "keyup" event
  */
-Drupal.behaviors.islandora_authority_jsAC.prototype.onkeyup = function (input, e) {
+Drupal.settings.islandora_authority.jsAC.prototype.onkeyup = function (input, e) {
   if (!e) {
     e = window.event;
   }
@@ -111,7 +111,7 @@ Drupal.behaviors.islandora_authority_jsAC.prototype.onkeyup = function (input, e
 /**
  * Puts the currently highlighted suggestion into the autocomplete field
  */
-Drupal.behaviors.islandora_authority_jsAC.prototype.select = function (node) {
+Drupal.settings.islandora_authority.jsAC.prototype.select = function (node) {
   //TODO:  Test this...
   var obj = node.autocompleteSet;
   var parents = this.input.id.split('--');
@@ -121,10 +121,12 @@ Drupal.behaviors.islandora_authority_jsAC.prototype.select = function (node) {
       //slice to get rid of the name of the current field
       var id_parts = parents.slice(0, parents.length - 1);
       
-      //Add the which the current property represents
-      id_parts.push(prop.replace(/_/g, '-'));
+      //Add the part which the current property represents, while making the property
+      //  name match what should have been put into the id, so we can select the
+      //  relevant field below.
+      id_parts.push(prop.replace(/(\]\[|_| )/g, '-'));
       
-      //Update the contents of the required property.
+      //Update the contents of the required field.
       $('#'+id_parts.join('--')).val(obj[prop]);
     }
   }
@@ -133,9 +135,24 @@ Drupal.behaviors.islandora_authority_jsAC.prototype.select = function (node) {
 /**
  * Highlights the next suggestion
  */
-Drupal.behaviors.islandora_authority_jsAC.prototype.selectDown = function () {
-  if (this.selected && this.selected.nextSibling) {
-    this.highlight(this.selected.nextSibling);
+Drupal.settings.islandora_authority.jsAC.prototype.selectDown = function () {
+  if (this.selected2){
+    var next = $(this.selected2).nextAll('li:first')[0];
+    if (next) {
+      this.highlightSub(next);
+    }
+    else {
+      var lis = $('li', this.popup2);
+      if (lis.size() > 0) {
+        this.highlightSub(lis.get(0));
+      }
+    }
+  }
+  else if (this.selected){
+    var next = $(this.selected).nextAll('li:first')[0];
+    if (next) {
+      this.highlight(this.selected.nextSibling);
+    }
   }
   else {
     var lis = $('li', this.popup);
@@ -148,31 +165,50 @@ Drupal.behaviors.islandora_authority_jsAC.prototype.selectDown = function () {
 /**
  * Highlights the previous suggestion
  */
-Drupal.behaviors.islandora_authority_jsAC.prototype.selectUp = function () {
-  if (this.selected && this.selected.previousSibling) {
-    this.highlight(this.selected.previousSibling);
+Drupal.settings.islandora_authority.jsAC.prototype.selectUp = function () {
+  var prev = false;
+  if (this.selected2) { 
+    prev = $(this.selected2).prevAll('li:first')[0];
+    if (prev) {
+      this.highlightSub(prev);
+    }
+  }
+  else if (this.selected) {
+    prev = $(this.selected).prevAll('li:first')[0];
+    if (prev) {
+      this.highlight(prev);
+    }
   }
 };
 
-Drupal.behaviors.islandora_authority_jsAC.prototype.selectLeft = function () {
-  if (this.selected && this.selected2) {
+Drupal.settings.islandora_authority.jsAC.prototype.selectLeft = function () {
+  if (this.selected2) {
+    this.unhighlightSub(this.selected2);
     this.highlight(this.selected);
   }
 };
 
-Drupal.behaviors.islandora_authority_jsAC.prototype.selectRight = function () {
-  if (this.selected && this.selected2) {
+Drupal.settings.islandora_authority.jsAC.prototype.selectRight = function () {
+  if (this.selected2) {
     //Insert the given object...
+    this.hidePopup(false);
   }
   else if (this.selected) {
     this.showSubmenu(this.selected);
+    if (typeof this.popup2 != 'undefined') {
+      this.highlightSub(this.popup2.firstChild.firstChild);
+    }
+  }
+  else {
+    //Dunno...
+    //this.select(this.selected);
   }
 };
 
 /**
  * Highlights a suggestion
  */
-Drupal.behaviors.islandora_authority_jsAC.prototype.highlight = function (node) {
+Drupal.settings.islandora_authority.jsAC.prototype.highlight = function (node) {
   if (this.selected) {
     $(this.selected).removeClass('selected');
   }
@@ -183,55 +219,73 @@ Drupal.behaviors.islandora_authority_jsAC.prototype.highlight = function (node) 
   this.showSubmenu(this.selected);
 };
 
+Drupal.settings.islandora_authority.jsAC.prototype.highlightSub = function (node) {
+  if (this.selected2) {
+    $(this.selected2).removeClass('selected');
+  }
+  $(node).addClass('selected');
+  this.selected2 = node;
+};
+
 /**
  * Unhighlights a suggestion
  */
-Drupal.behaviors.islandora_authority_jsAC.prototype.unhighlight = function (node) {
+Drupal.settings.islandora_authority.jsAC.prototype.unhighlight = function (node) {
   $(node).removeClass('selected');
   this.selected = false;
+};
+
+Drupal.settings.islandora_authority.jsAC.prototype.unhighlightSub = function (node) {
+  $(node).removeClass('selected');
+  this.selected2 = false;
 };
 
 /**
  * Hides the autocomplete suggestions
  */
-Drupal.behaviors.islandora_authority_jsAC.prototype.hidePopup = function (keycode) {
-  // Select item if the right key or mousebutton was pressed
-  if (this.selected && ((keycode && keycode != 46 && keycode != 8 && keycode != 27) || !keycode)) {
-    this.select(this.selected);
+Drupal.settings.islandora_authority.jsAC.prototype.hidePopup = function (keycode) {
+  // Select item if the right key or mousebutton was pressed...  seems kinda redundant?
+  if ((keycode && keycode != 46 && keycode != 8 && keycode != 27) || !keycode) {
+    if (this.selected2) {
+      this.select(this.selected2);
+    }
+    else if (this.selected) {
+      this.select(this.selected);
+    }
     //this.input.value = this.selected.autocompleteValue;
   }
   
   // Hide popups
   var popup = this.popup2;
   if (popup) {
-    this.popup2 = null;
+    delete this.popup2;
     $(popup).fadeOut('fast', function() {$(popup).remove();});
   }
   
   popup = this.popup;
   if (popup) {
-    this.popup = null;
+    delete this.popup;
     $(popup).fadeOut('fast', function() {$(popup).remove();});
   }
   this.selected = false;
+  this.selected2 = false;
 };
 
 /**
  * Positions the suggestions popup and starts a search
  */
-Drupal.behaviors.islandora_authority_jsAC.prototype.populatePopup = function () {
+Drupal.settings.islandora_authority.jsAC.prototype.populatePopup = function () {
   // Show popup
   if (this.popup) {
     $(this.popup).remove();
   }
   this.selected = false;
   this.popup = document.createElement('div');
-  this.popup.id = 'autocomplete';
+  this.popup.id = 'islandora_authority_autocomplete';
   this.popup.owner = this;
   $(this.popup).css({
     marginTop: this.input.offsetHeight +'px',
-    width: (this.input.offsetWidth - 4) +'px',
-    display: 'none'
+    width: (this.input.offsetWidth - 4) +'px'
   });
   $(this.input).before(this.popup);
 
@@ -240,34 +294,34 @@ Drupal.behaviors.islandora_authority_jsAC.prototype.populatePopup = function () 
   this.db.search(this.input.value);
 };
 
-Drupal.behaviors.islandora_authority_jsAC.prototype.showSubmenu = function (node) {
+Drupal.settings.islandora_authority.jsAC.prototype.showSubmenu = function (node) {
   // Show popup
   if (this.popup2) {
     $(this.popup2).remove();
   }
-  
-  if (typeof node.alt_menu != 'undefined') { 
+  this.selected2 = false;
+  if (typeof node.alt_popup != 'undefined') { 
     this.popup2 = document.createElement('div');
-    this.popup2.id = 'autocomplete2';
+    this.popup2.id = 'islandora_authority_submenu';
     this.popup2.owner = this;
     
     $(this.popup2)
       .css({
         marginLeft: (node.offsetWidth - 4) +'px',
-        width: (node.offsetWidth - 4) +'px',
-        display: 'none'
+        width: (node.offsetWidth) +'px',
+        top: (node.offsetTop - 4) + 'px'
       })
-      .append(node.alt_menu)
+      .append(node.alt_popup)
       .show(); //Seems kinda silly with the display: none...  anyway.
       
-    $(this.popup).before(this.popup2);
+    $(this.selected).before(this.popup2);
   }
 };
 
 /**
  * Fills the suggestion popup with any matches received
  */
-Drupal.behaviors.islandora_authority_jsAC.prototype.found = function (matches) {
+Drupal.settings.islandora_authority.jsAC.prototype.found = function (matches) {
   // If no value in the textfield, do not show the popup.
   if (!this.input.value.length) {
     return false;
@@ -284,25 +338,28 @@ Drupal.behaviors.islandora_authority_jsAC.prototype.found = function (matches) {
       .html('<div>'+ obj['full-display'] +'</div>')
       .mousedown(function () {ac.select(this);})
       .mouseover(function () {ac.highlight(this);})
-      .mouseout(function () {ac.unhighlight(this);});
+      .mouseout(function () {ac.unhighlight(this);}); //Gonna require some shenanigans to make it stay selected when using the mouse...
     
-    if (obj['alts'].length > 0) {
-      var alt_ul = document.createElement('ul');
-      var alts = obj['alts']
-      for (prop in alts) {
-        if(obj.hasOwnProperty(prop) && typeof obj[prop] !== 'function') {
-          var alt_li = document.createElement('li');
-          $(alt_li)
-            .html('<div>'+ alts[prop]['full-display'] +'</div>')
-            .mousedown(function () {ac.select(this);})
-            .mouseover(function () {ac.highlight(this);})
-            .mouseout(function () {ac.unhighlight(this);});
-          alt_li.autocompleteSet = alts[prop];
-          $(alt_ul).append(alt_li);
-        }
+    
+    var alt_ul = document.createElement('ul');
+    var alts = obj['alts']
+    for (var prop in alts) {
+      if(typeof obj[prop] !== 'function') {
+        var alt_li = document.createElement('li');
+        $(alt_li)
+          .html('<div>'+ alts[prop]['full-display'] +'</div>')
+          .mousedown(function () {ac.select(this);})
+          .mouseover(function () {ac.highlightSub(this);})
+          .mouseout(function () {ac.unhighlightSub(this);});
+        alt_li.autocompleteSet = alts[prop];
+        $(alt_ul).append(alt_li);
       }
+    }
+    
+    if (alt_ul.childNodes.length > 0) {
       li.alt_popup = alt_ul;
     }
+  
     
     //TODO:  Make it save the entire list somewhere.
     li.autocompleteSet = obj;
@@ -321,7 +378,7 @@ Drupal.behaviors.islandora_authority_jsAC.prototype.found = function (matches) {
   }
 };
 
-Drupal.behaviors.islandora_authority_jsAC.prototype.setStatus = function (status) {
+Drupal.settings.islandora_authority.jsAC.prototype.setStatus = function (status) {
   switch (status) {
     case 'begin':
       $(this.input).addClass('throbbing');
@@ -337,7 +394,7 @@ Drupal.behaviors.islandora_authority_jsAC.prototype.setStatus = function (status
 /**
  * An AutoComplete DataBase object
  */
-Drupal.behaviors.islandora_authority_ACDB = function (uri) {
+Drupal.settings.islandora_authority.ACDB = function (uri) {
   this.uri = uri;
   this.delay = 300;
   this.cache = {};
@@ -346,7 +403,7 @@ Drupal.behaviors.islandora_authority_ACDB = function (uri) {
 /**
  * Performs a cached and delayed search
  */
-Drupal.behaviors.islandora_authority_ACDB.prototype.search = function (searchString) {
+Drupal.settings.islandora_authority.ACDB.prototype.search = function (searchString) {
   var db = this;
   this.searchString = searchString;
 
@@ -387,7 +444,7 @@ Drupal.behaviors.islandora_authority_ACDB.prototype.search = function (searchStr
 /**
  * Cancels the current autocomplete request
  */
-Drupal.behaviors.islandora_authority_ACDB.prototype.cancel = function() {
+Drupal.settings.islandora_authority.ACDB.prototype.cancel = function() {
   if (this.owner) this.owner.setStatus('cancel');
   if (this.timer) clearTimeout(this.timer);
   this.searchString = '';

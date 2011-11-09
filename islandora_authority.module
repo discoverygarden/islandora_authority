@@ -9,6 +9,7 @@ function islandora_authority_elements() {
       '#input' => TRUE,
       '#process' => array('islandora_authority_element_expansion'),
       '#attributes' => array(''),
+      '#autocomplete_path' => 'islandora/authority',
       '#subfields' => array(
         'eaccpf_name_forename_et' => array(
           //'#fieldname' => 'eaccpf_name_forename_et',
@@ -60,14 +61,25 @@ function _build_match(&$results, &$solr_doc, &$hl_field) {
     'full-display' => t('!last, !first', $mapped),
     'eaccpf_name_forename_et' => $solr_doc->eaccpf_name_forename_et,
     'eaccpf_name_surname_et' => $solr_doc->eaccpf_name_surname_et,
-    'alts' => array() 
+    'alts' => array(
+      'id0' => array(
+        'full-display' => 'alternative, name0',
+        'eaccpf_name_forename_et' => 'an alternative forname',
+        'eaccpf_name_surname_et' => 'an alternative surname',
+      ),
+      'id1' => array(
+        'full-display' => 'alternative, name1',
+        'eaccpf_name_forename_et' => 'an alternative forname1',
+        'eaccpf_name_surname_et' => 'an alternative surname1',
+      )
+    ) 
   );
     
   
   
   //'alts' would be built from another set of fields in the same document,
   //  including the an XML id within the doc
-  $toReturn['alts'] = array();
+  //$toReturn['alts'] = array();
   
   return $toReturn;
 }
@@ -169,9 +181,11 @@ function theme_authoritytextfield($element) {
   $class = array('form-text');
   $extra = '';
   $output = '';
-  dsm($element);
+  //dsm($element);
   if ($element['#autocomplete_path'] && menu_valid_path(array('link_path' => $element['#autocomplete_path'].''))) {
-    drupal_add_js(drupal_get_path('module', 'islandora_authority').'/js/autocomplete.js', 'module');
+    $mod_path = drupal_get_path('module', 'islandora_authority');
+    drupal_add_js("$mod_path/js/autocomplete.js", 'module');
+    drupal_add_css("$mod_path/css/autocomplete.css", 'module');
     $class[] = 'form-islandora_authority_autocomplete';
     $extra =  '<input class="islandora_authority_autocomplete" type="hidden" id="'. $element['#id'] .'-autocomplete" value="'. check_url(url($element['#autocomplete_path'], array('absolute' => TRUE))) .'" disabled="disabled" />';
   }
