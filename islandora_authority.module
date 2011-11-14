@@ -34,7 +34,9 @@ function islandora_authority_elements() {
       '#size' => 60, 
       '#maxlength' => 128, 
       '#autocomplete_path' => 'islandora/authority', 
-      '#process' => array('form_expand_ahah'))
+      '#process' => array(
+        'form_expand_ahah',
+        'islandora_authority_authoritytextfield_process'))
   );
 }
 
@@ -47,20 +49,25 @@ function islandora_authority_menu() {
   );
 }
 
-function _build_match(&$results, &$solr_doc, &$hl_field) {
-  $map = array(
-    'eaccpf_name_surname_et' => '!last',
-    'eaccpf_name_forename_et' => '!first'
-  );
-  $mapped = array(
-    '!first' => $solr_doc->eaccpf_name_forename_et,
-    '!last' => $solr_doc->eaccpf_name_surname_et
-  );
+function _build_match(&$results, &$solr_doc, &$field_info) {
+  $map = array();
+  $mapped = array();
+  $toReturn = array();
+  foreach ($field_info['fields'] as $hash => &$field) {
+    if (isset($field['mapping'])) {
+      $map[$field['field_name']] =& $field['mapping'];
+      $mapped[$field['mapping']] = $solr_doc->{$field['field_name']};
+    }
+    
+    $toReturn[$hash] = $solr_doc->{$field['field_name']};
+  }
+
+  $hl_field = $field_info['fields'][$field_info['current']]['field_name'];
   $mapped[$map[$hl_field]] = $results->highlighting->{$solr_doc->PID}->{$hl_field}[0];
-  $toReturn = array(
-    'full-display' => t('!last, !first', $mapped),
-    'eaccpf_name_forename_et' => $solr_doc->eaccpf_name_forename_et,
-    'eaccpf_name_surname_et' => $solr_doc->eaccpf_name_surname_et,
+  $toReturn = array_merge($toReturn, array(
+    'full-display' => t($field_info['pattern'], $mapped),
+    //TODO (MAJOR):  'alts' needs to be built from another set of fields in the same document,
+    //  including the an XML id within the doc
     'alts' => array(
       'id0' => array(
         'full-display' => 'alternative, name0',
@@ -73,19 +80,55 @@ function _build_match(&$results, &$solr_doc, &$hl_field) {
         'eaccpf_name_surname_et' => 'an alternative surname1',
       )
     ) 
-  );
+  ));
     
-  
-  
-  //'alts' would be built from another set of fields in the same document,
-  //  including the an XML id within the doc
-  //$toReturn['alts'] = array();
+
   
   return $toReturn;
 }
 
+/**
+ * 
+ * @param type $build_id
+ * @param type $element
+ * @param type $form_state
+ * @return array (
+ *  'pattern' => as used in t function,
+ *  'current' => hash of the current element,
+ *  'fields' => array(
+ *    array(
+ *      'field_name' => name_as_in_solr,
+ *      'mapping' => as in the t pattern above.
+ *    )
+ *    ...
+ *  )
+ * ) 
+ */
+function islandora_authority_get_fields(&$build_id, &$element, &$form_state = array('storage' => NULL, 'submitted' => FALSE, 'post' => array())) {
+  $form = form_get_cache($build_id, $form_state);
+  module_load_include('inc', 'objective_forms', 'Form');
+  $obj_form = new Form($form, $form_state);
+  $el = $obj_form->findElement($element)->parent;
+  $toReturn = array(
+    'pattern' => $el->islandora_authority_t_pattern,
+    'current' => $element,
+    'fl' => array()
+  );
+  foreach($el->toArray() as $sibling) {
+    if (is_array($sibling) && (
+        $sibling['#type'] === 'authoritytextfield' ||
+        $sibling['#type'] === 'hidden')) {
+      $toReturn['fields'][$sibling['#hash']] = array(
+        'field_name' => $sibling['#islandora_authority_solr_field'],
+        'mapping' => $sibling['#islandora_authority_mapping']);
+      $toReturn['fl'][] = $sibling['#islandora_authority_solr_field'];
+    }
+  }
+  return $toReturn;
+}
+
 //Need to take which field to highlight as a parameter
-function islandora_authority_autocomplete($field = 'eaccpf_complete_et', $string = '') {
+function islandora_authority_autocomplete($build_id, $element, $string = '') {
   static $solr = NULL;
   
   if (is_null($solr)) {
@@ -97,14 +140,12 @@ function islandora_authority_autocomplete($field = 'eaccpf_complete_et', $string
   }
   
   $matches = array();
+  //TODO:  Get the list of fields to grab, based on the build ID and current element.
+  $fields = islandora_authority_get_fields($build_id, $element);
+  dd($fields);
   $results = $solr->search($string, 0, 10, array(
-          'qf' => $field,
-          'fl' => implode(',', array(
-            'PID',
-            $field,
-            'eaccpf_name_forename_et',
-            'eaccpf_name_surname_et',
-            'eaccpf_complete_et')),
+          'qf' => $fields['fields'][$element]['field_name'],
+          'fl' => implode(',', $fields['fl']),
           'qt' => variable_get('eac_cpf_completer_handler', 'dismax'),
           'hl' => 'true',
           'hl.fl' => '' //Not needed, should use qf fields by default.
@@ -113,8 +154,9 @@ function islandora_authority_autocomplete($field = 'eaccpf_complete_et', $string
   $matches = array();
   foreach ($results->response->docs as &$doc) {
       $match =& $matches[$doc->PID];
-      $match = _build_match($results, $doc, $field);
+      $match = _build_match($results, $doc, $fields);
   }
+  //dd($matches);
   print drupal_json($matches);
   exit();
 }
@@ -152,21 +194,7 @@ function islandora_authority_clean_form_id($id, $flush = FALSE) {
   return $id;
 }
 
-function islandora_authority_element_expansion($element) {
-  foreach ($element['#subfields'] as $key => $values) {
-    if (!isset($element[$key])) {
-      $id = array_merge($element['#parents'], array('-' . $key));
-      $element[$key] = array_merge($values, array(
-        '#parents' => $element['#parents'],
-        '#autocomplete_path' => $element['#autocomplete_path'] . '/' . urlencode($key),
-        '#id' => form_clean_id('edit-' . implode('-', $id)),
-        '#attributes' => array('field' => $key)
-      ));
-    }
-  }
-  dsm($element);
-  return $element;
-}
+
 
 function islandora_authority_theme() {
   return array(
@@ -175,19 +203,38 @@ function islandora_authority_theme() {
   );
 }
 
+function islandora_authority_authoritytextfield_process($element, $edit, &$form_state, $complete_form) {
+  $element['#autocomplete_path'] = implode('/', array(
+    $element['#autocomplete_path'], 
+    $complete_form['#build_id'],
+    $element['#hash']
+  ));
+  $element['#islandora_authority_id'] = implode('--', array(
+    $complete_form['#build_id'],
+    $element['#hash']
+  ));
+  //dd($element);
+  return $element;
+}
+
+/**
+ * Theme implementation for custom textfield...  Only difference from 'regular' 
+ *  textfield is the use of the 'islandora_authority_id' instead of the 'real' id
+ * @param array $element 'preprocessed' element definition.
+ * @return string Containing the markup for the given element 
+ */
 function theme_authoritytextfield($element) {
   $size = empty($element['#size']) ? '' : ' size="'. $element['#size'] .'"';
   $maxlength = empty($element['#maxlength']) ? '' : ' maxlength="'. $element['#maxlength'] .'"';
   $class = array('form-text');
   $extra = '';
   $output = '';
-  //dsm($element);
   if ($element['#autocomplete_path'] && menu_valid_path(array('link_path' => $element['#autocomplete_path'].''))) {
     $mod_path = drupal_get_path('module', 'islandora_authority');
     drupal_add_js("$mod_path/js/autocomplete.js", 'module');
     drupal_add_css("$mod_path/css/autocomplete.css", 'module');
     $class[] = 'form-islandora_authority_autocomplete';
-    $extra =  '<input class="islandora_authority_autocomplete" type="hidden" id="'. $element['#id'] .'-autocomplete" value="'. check_url(url($element['#autocomplete_path'], array('absolute' => TRUE))) .'" disabled="disabled" />';
+    $extra =  '<input class="islandora_authority_autocomplete" type="hidden" id="'. $element['#islandora_authority_id'] .'-autocomplete" value="'. check_url(url($element['#autocomplete_path'], array('absolute' => TRUE))) .'" disabled="disabled" />';
   }
   _form_set_class($element, $class);
 
@@ -195,15 +242,23 @@ function theme_authoritytextfield($element) {
     $output .= '<span class="field-prefix">'. $element['#field_prefix'] .'</span> ';
   }
 
-  $output .= '<input type="text"'. $maxlength .' name="'. $element['#name'] .'" id="'. $element['#id'] .'"'. $size .' value="'. check_plain($element['#value']) .'"'. drupal_attributes($element['#attributes']) .' />';
+  $output .= '<input type="text"'. $maxlength .' name="'. $element['#name'] .'" id="'. $element['#islandora_authority_id'] .'"'. $size .' value="'. check_plain($element['#value']) .'"'. drupal_attributes($element['#attributes']) .' />';
 
   if (isset($element['#field_suffix'])) {
     $output .= ' <span class="field-suffix">'. $element['#field_suffix'] .'</span>';
   }
-
-  return theme('form_element', $element, $output) . $extra;
+  
+  //dd($element);
+  $toReturn = theme('form_element', $element, $output) . $extra;
+  //dd($toReturn);
+  return $toReturn;
 }
 
+/**
+ * @deprecated call each field individually...
+ * @param array $element
+ * @return string 
+ */
 function theme_authorityelement($element) {
   $class = 'form-authority_element';
   if (isset($element['#attributes']['class'])) {
@@ -217,4 +272,24 @@ function theme_authorityelement($element) {
   else {
     return $element['#children'];
   }
+}
+/**
+ * @deprecated calling the elements indivudually works...  Needs some way to configure which fields to get from Solr.
+ * @param type $element
+ * @return type 
+ */
+function islandora_authority_element_expansion($element) {
+  foreach ($element['#subfields'] as $key => $values) {
+    if (!isset($element[$key])) {
+      $id = array_merge($element['#parents'], array('-' . $key));
+      $element[$key] = array_merge($values, array(
+        '#parents' => $element['#parents'],
+        '#autocomplete_path' => $element['#autocomplete_path'] . '/' . urlencode($key),
+        '#id' => form_clean_id('edit-' . implode('-', $id)),
+        '#attributes' => array('field' => $key)
+      ));
+    }
+  }
+  //dsm($element);
+  return $element;
 }

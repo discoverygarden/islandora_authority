@@ -18,7 +18,6 @@ root {
 #islandora_authority_autocomplete, #islandora_authority_submenu {
   position: absolute;
   display: none;
-  
 }
 
 #islandora_authority_autocomplete > ul , #islandora_authority_submenu > ul {
