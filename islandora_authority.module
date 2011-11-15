@@ -66,8 +66,10 @@ function _build_match(&$results, &$solr_doc, &$field_info) {
   $mapped[$map[$hl_field]] = $results->highlighting->{$solr_doc->PID}->{$hl_field}[0];
   $toReturn = array_merge($toReturn, array(
     'full-display' => t($field_info['pattern'], $mapped),
-    //TODO (MAJOR):  'alts' needs to be built from another set of fields in the same document,
-    //  including the an XML id within the doc
+    //TODO (MAJOR):  'alts' needs to be built from another set of fields in the 
+    //  same document, including the an XML id within the doc...  OR, possibly 
+    //  just assume that the first set of values is the primary?  Depends on the
+    //  how it's indexed...
     'alts' => array(
       'id0' => array(
         'full-display' => 'alternative, name0',
@@ -140,9 +142,8 @@ function islandora_authority_autocomplete($build_id, $element, $string = '') {
   }
   
   $matches = array();
-  //TODO:  Get the list of fields to grab, based on the build ID and current element.
   $fields = islandora_authority_get_fields($build_id, $element);
-  dd($fields);
+  //dd($fields);
   $results = $solr->search($string, 0, 10, array(
           'qf' => $fields['fields'][$element]['field_name'],
           'fl' => implode(',', $fields['fl']),
@@ -156,7 +157,7 @@ function islandora_authority_autocomplete($build_id, $element, $string = '') {
       $match =& $matches[$doc->PID];
       $match = _build_match($results, $doc, $fields);
   }
-  //dd($matches);
+  dd($matches);
   print drupal_json($matches);
   exit();
 }
