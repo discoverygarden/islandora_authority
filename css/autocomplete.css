@@ -22,8 +22,12 @@ root {
 
 #islandora_authority_autocomplete > ul , #islandora_authority_submenu > ul {
   border: 1px solid;
-  overflow: hidden;
+  overflow: visible;
   z-index: 100;
+}
+
+#islandora_authority_submenu > ul {
+  overflow: hidden;
 }
 
 #islandora_authority_autocomplete li {

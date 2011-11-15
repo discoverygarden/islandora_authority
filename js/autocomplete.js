@@ -130,6 +130,8 @@ Drupal.settings.islandora_authority.jsAC.prototype.select = function (node) {
       $('#'+id_parts.join('--')).val(obj[prop]);
     }
   }
+  this.unhighlightSub(this.selected2);
+  this.unhighlight(this.selected);
 };
 
 /**
@@ -209,6 +211,9 @@ Drupal.settings.islandora_authority.jsAC.prototype.selectRight = function () {
  * Highlights a suggestion
  */
 Drupal.settings.islandora_authority.jsAC.prototype.highlight = function (node) {
+  if (this.selected2) { //Deselect the submenu entry.
+    this.unhighlightSub(this.selected2);
+  }
   if (this.selected) {
     $(this.selected).removeClass('selected');
   }
@@ -231,8 +236,10 @@ Drupal.settings.islandora_authority.jsAC.prototype.highlightSub = function (node
  * Unhighlights a suggestion
  */
 Drupal.settings.islandora_authority.jsAC.prototype.unhighlight = function (node) {
-  $(node).removeClass('selected');
-  this.selected = false;
+  if (!this.selected2) {
+    $(node).removeClass('selected');
+    this.selected = false;
+  }
 };
 
 Drupal.settings.islandora_authority.jsAC.prototype.unhighlightSub = function (node) {
@@ -330,15 +337,23 @@ Drupal.settings.islandora_authority.jsAC.prototype.found = function (matches) {
   // Prepare matches
   var ul = document.createElement('ul');
   var ac = this;
-  for (key in matches) {
+  for (var key in matches) {
     //TODO:  Make it save/build the entire list...
     var obj = matches[key];
     var li = document.createElement('li');
     $(li)
       .html('<div>'+ obj['full-display'] +'</div>')
-      .mousedown(function () {ac.select(this);})
-      .mouseover(function () {ac.highlight(this);})
-      .mouseout(function () {ac.unhighlight(this);}); //Gonna require some shenanigans to make it stay selected when using the mouse...
+      .mouseenter(function () {
+        ac.highlight(this);
+      })
+      .mouseleave(function () {
+        ac.unhighlight(this);
+      })
+      .click(function (event) {
+        if (event.which == 1) {
+          ac.select(this);
+        }
+      }); //Gonna require some shenanigans to make it stay selected when using the mouse...
     
     
     var alt_ul = document.createElement('ul');
@@ -348,9 +363,17 @@ Drupal.settings.islandora_authority.jsAC.prototype.found = function (matches) {
         var alt_li = document.createElement('li');
         $(alt_li)
           .html('<div>'+ alts[prop]['full-display'] +'</div>')
-          .mousedown(function () {ac.select(this);})
-          .mouseover(function () {ac.highlightSub(this);})
-          .mouseout(function () {ac.unhighlightSub(this);});
+          .mouseenter(function () {
+            ac.highlightSub(this);
+          })
+          .mouseleave(function () {
+            ac.unhighlightSub(this);
+          })
+          .click(function (event) {
+            if (event.which == 1) {
+              ac.select(this);
+            }
+          });
         alt_li.autocompleteSet = alts[prop];
         $(alt_ul).append(alt_li);
       }
