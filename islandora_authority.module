@@ -45,6 +45,7 @@ function _zip() {
   $arraysToZip = array();
   $lengths = array();
   $key = null;
+  $hasKey = false;
   foreach ($args as &$arg) {
     if (is_array($arg)) {
       if (!empty($key)) {
@@ -58,16 +59,23 @@ function _zip() {
     }
     else if (is_string($arg)) {
       $key = $arg;
+      $hasKey = true;
     }
   }
   //dd($args);
   //dd($arraysToZip);
-  for($i = 0; $i < min($lengths); $i++) {
-    $tuple = array();
-    foreach($arraysToZip as $key => &$toZip) {
-      $tuple[$key] =& $toZip[$i];
+  if($hasKey) {
+    for($i = 0; $i < min($lengths); $i++) {
+      $tuple = array();
+      foreach($arraysToZip as $key => &$toZip) {
+        $tuple[$key] =& $toZip[$i];
+      }
+      $arrayToReturn[] = $tuple;
     }
-    $arrayToReturn[] = $tuple;
+  }
+  else {
+    array_unshift($args, null);
+    $arrayToReturn = call_user_func_array('array_map', $args);
   }
   
   return $arrayToReturn;
@@ -127,6 +135,7 @@ function _build_match(&$results, &$solr_doc, &$field_info) {
   $map = array(); //fieldname => !variable_name
   $mapped = array(); //!variable_name => field value
   $fields = array();
+  $keys = array();
   
   foreach ($field_info['fields'] as $hash => &$field) {
     if (isset($field['mapping'])) {
@@ -134,16 +143,17 @@ function _build_match(&$results, &$solr_doc, &$field_info) {
       //$mapped[$field['mapping']] = $solr_doc->{$field['field_name']};
     }
     
-    $fields[] = $hash;
+    //$fields[] = $hash;
+    $keys[] = $hash;
     $fields[] = (array)($solr_doc->{$field['field_name']});
   }
   
   $toReturn = array('alts' => array());
   $zipped = call_user_func_array('_zip', $fields);
-
+  dd($zipped);
   foreach ($zipped as $index => &$value) {
     $toMerge = array();
-    foreach ($value as $hash => &$content) {
+    foreach (array_combine($keys, $value) as $hash => $content) {
       if(isset($map[$hash])) {
         $mapped[$map[$hash]] = $content;
       }
