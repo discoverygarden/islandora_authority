@@ -15,15 +15,20 @@ root {
   display: block;
 }
 
-#islandora_authority_autocomplete, #islandora_authority_submenu {
+#islandora_authority_autocomplete, #islandora_authority_autocomplete > ul > li > ul {
   position: absolute;
   display: none;
 }
 
-#islandora_authority_autocomplete > ul , #islandora_authority_submenu > ul {
+#islandora_authority_autocomplete > ul , #islandora_authority_autocomplete > ul > li > ul {
   border: 1px solid;
-  overflow: hidden;
+  overflow: visible;
   z-index: 100;
+}
+
+#islandora_authority_autocomplete ul {
+  padding: 0;
+  margin: 0;
 }
 
 #islandora_authority_autocomplete li {
@@ -32,7 +37,7 @@ root {
   padding: 2px;
   background: white repeat scroll 0 0;
   color: #000000;
-  white-space: pre
+  white-space: pre;
 }
 
 #islandora_authority_autocomplete li.selected {

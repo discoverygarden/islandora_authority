@@ -196,7 +196,7 @@ Drupal.settings.islandora_authority.jsAC.prototype.selectRight = function () {
   else if (this.selected) {
     this.showSubmenu(this.selected);
     if (typeof this.popup2 != 'undefined') {
-      this.highlightSub(this.popup2.firstChild.firstChild);
+      this.highlightSub(this.popup2.firstChild);
     }
   }
   else {
@@ -290,7 +290,7 @@ Drupal.settings.islandora_authority.jsAC.prototype.populatePopup = function () {
   this.popup.owner = this;
   $(this.popup).css({
     marginTop: this.input.offsetHeight +'px',
-    width: (this.input.offsetWidth - 4) +'px',
+    width: (this.input.offsetWidth) +'px',
     overflow: 'visible'
   });
   $(this.input).before(this.popup);
@@ -316,11 +316,9 @@ Drupal.settings.islandora_authority.jsAC.prototype.showSubmenu = function (node)
     this.popup2 = node.alt_popup;
     $(this.popup2)
       .css({
-        marginLeft: (node.offsetWidth - 4) / 2 +'px',
+        marginLeft: (node.offsetWidth - 4) +'px',
         width: (node.offsetWidth) +'px',
-        top: (-node.offsetTop + 4) + 'px',
-        align: 'right',
-        float: 'right'
+        top: (node.offsetTop) + 'px'
       })
       .show();
       
@@ -345,9 +343,6 @@ Drupal.settings.islandora_authority.jsAC.prototype.found = function (matches) {
     var li = document.createElement('li');
     $(li)
       .html('<div>'+ obj['full-display'] +'</div>')
-      .css({
-        float: 'left'
-      })
       .click(function () {
         ac.select(this);
       })
@@ -372,8 +367,9 @@ Drupal.settings.islandora_authority.jsAC.prototype.found = function (matches) {
           .mouseleave(function () {
             ac.unhighlightSub(this);
           })
-          .click(function () {
+          .click(function (event) {
             ac.select(this);
+            event.stopPropagation();
           });
         alt_li.autocompleteSet = alts[prop];
         $(alt_ul).append(alt_li).hide();
