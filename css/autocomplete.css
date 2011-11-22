@@ -15,6 +15,19 @@ root {
   display: block;
 }
 
+html.js input.throbbing {
+  background-position: 100% -18px !important;
+}
+
+/* Animated throbber */
+html.js input.form-islandora_authority_autocomplete {
+  background-image: url(./throbber.gif);
+  background-repeat: no-repeat;
+  background-position: 100% 2px; /* LTR */
+}
+
+
+
 #islandora_authority_autocomplete, #islandora_authority_autocomplete > ul > li > ul {
   position: absolute;
   display: none;
