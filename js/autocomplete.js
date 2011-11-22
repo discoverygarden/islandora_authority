@@ -198,7 +198,7 @@ Drupal.settings.islandora_authority.jsAC.prototype.selectRight = function () {
   else if (this.selected) {
     this.showSubmenu(this.selected);
     if (typeof this.popup2 != 'undefined') {
-      this.highlightSub(this.popup2.firstChild.firstChild);
+      this.highlightSub(this.popup2.firstChild);
     }
   }
   else {
@@ -292,7 +292,8 @@ Drupal.settings.islandora_authority.jsAC.prototype.populatePopup = function () {
   this.popup.owner = this;
   $(this.popup).css({
     marginTop: this.input.offsetHeight +'px',
-    width: (this.input.offsetWidth - 4) +'px'
+    width: (this.input.offsetWidth) +'px',
+    overflow: 'visible'
   });
   $(this.input).before(this.popup);
 
@@ -304,24 +305,26 @@ Drupal.settings.islandora_authority.jsAC.prototype.populatePopup = function () {
 Drupal.settings.islandora_authority.jsAC.prototype.showSubmenu = function (node) {
   // Show popup
   if (this.popup2) {
-    $(this.popup2).remove();
+    $(this.popup2).hide();
   }
   this.selected2 = false;
   if (typeof node.alt_popup != 'undefined') { 
-    this.popup2 = document.createElement('div');
+    /*this.popup2 = document.createElement('div');
     this.popup2.id = 'islandora_authority_submenu';
     this.popup2.owner = this;
     
+    */
+
+    this.popup2 = node.alt_popup;
     $(this.popup2)
       .css({
         marginLeft: (node.offsetWidth - 4) +'px',
         width: (node.offsetWidth) +'px',
-        top: (node.offsetTop - 4) + 'px'
+        top: (node.offsetTop) + 'px'
       })
-      .append(node.alt_popup)
-      .show(); //Seems kinda silly with the display: none...  anyway.
+      .show();
       
-    $(this.selected).before(this.popup2);
+    //$(this.selected).before(this.popup2);
   }
 };
 
@@ -338,29 +341,26 @@ Drupal.settings.islandora_authority.jsAC.prototype.found = function (matches) {
   var ul = document.createElement('ul');
   var ac = this;
   for (var key in matches) {
-    //TODO:  Make it save/build the entire list...
     var obj = matches[key];
     var li = document.createElement('li');
     $(li)
       .html('<div>'+ obj['full-display'] +'</div>')
+      .click(function () {
+        ac.select(this);
+      })
       .mouseenter(function () {
         ac.highlight(this);
       })
       .mouseleave(function () {
         ac.unhighlight(this);
-      })
-      .click(function (event) {
-        if (event.which == 1) {
-          ac.select(this);
-        }
       }); //Gonna require some shenanigans to make it stay selected when using the mouse...
-    
-    
+       
     var alt_ul = document.createElement('ul');
     var alts = obj['alts']
     for (var prop in alts) {
       if(typeof obj[prop] !== 'function') {
         var alt_li = document.createElement('li');
+        //FIXME:  Something is broken with the mouse handling...  Never selects in the submenu?
         $(alt_li)
           .html('<div>'+ alts[prop]['full-display'] +'</div>')
           .mouseenter(function () {
@@ -373,18 +373,18 @@ Drupal.settings.islandora_authority.jsAC.prototype.found = function (matches) {
             if (event.which == 1) {
               ac.select(this);
             }
+            event.stopPropagation();
           });
         alt_li.autocompleteSet = alts[prop];
-        $(alt_ul).append(alt_li);
+        $(alt_ul).append(alt_li).hide();
       }
     }
     
     if (alt_ul.childNodes.length > 0) {
       li.alt_popup = alt_ul;
+      $(li).append(alt_ul);
     }
   
-    
-    //TODO:  Make it save the entire list somewhere.
     li.autocompleteSet = obj;
     $(ul).append(li);
   }
