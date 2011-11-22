@@ -1,0 +1,35 @@
+Islandora Authority Module
+  (Perhaps this module in particular should be renamed to something like 
+  islandora_solr_autocomplete...  That's all it does at present.(
+
+--- Description ---
+  This module adds two elements (islandora_authority_{textfield,hidden}) and a 
+menu-path used for autocompletion.
+
+  The autocomplete path added is: 
+islandora/authority/{form-buildID}/{current_elementhash}/{search} 
+Do note that the build ID and element hash are put into the autocomplete path in 
+islandora_authority_textfield_process, and the default autocomplete path for the
+textfield elements is islandora/authority, so all we need are the fields in 
+which to search, and so we go on to...
+
+--- Configuration ---
+(NOTE: all config info is stored in #user_data on the relevant elements)
+  The basic setup is that multiple islandora_authority elements are direct 
+children of a common parent; this greatly simplifies configuration, because only
+have to look at a small part of the form.  
+The parent currently has two parameters:
+* islandora_authority_t_pattern:  A pattern as used by Drupal's t() function, 
+  likely using variables.
+* islandora_authority_fq: A list of tilde-separated Lucene statements, e.g.:
+  PID:ir*, to ensure all results come from the IR namespace.
+  (Note:  separating is (currently) done via a dumb explode; tildes in values
+  break it)
+
+Each contained authority element specifies:
+* islandora_authority_solr_search_field: A EdgeNGram'd Solr field
+* islandora_authority_solr_display_field: An optional Solr field, used for 
+  display purposes  (defaults to the search field)
+* islandora_authority_mapping: Optional, which is a 'variable' as used in 
+  Drupal's t() function (subbed into the 't_pattern' in the pattern for each
+  result)

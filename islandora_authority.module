@@ -22,7 +22,7 @@
  *            string3 => array3[1]
  *          ),
  *        )
- *   OR (similarly)
+ *   OR (similarly; equivalent to array_map(null, arrays...)
  *        _zip(array1, array2, array3) returns...  This duplicated array_map
  *        array(
  *          [0] => array(
@@ -87,7 +87,7 @@ function _zip() {
  */
 function islandora_authority_elements() {
   return array(
-    'authorityelement' => array(
+    /*'authorityelement' => array(
       '#input' => TRUE,
       '#process' => array('islandora_authority_element_expansion'),
       '#attributes' => array(''),
@@ -110,15 +110,22 @@ function islandora_authority_elements() {
           '#type' => 'hidden'
         )
       )
-    ),
-    'authoritytextfield' => array(
+    ),*/
+    'islandora_authority_textfield' => array(
       '#input' => TRUE,
       '#size' => 60, 
       '#maxlength' => 128, 
       '#autocomplete_path' => 'islandora/authority', 
       '#process' => array(
         'form_expand_ahah',
-        'islandora_authority_authoritytextfield_process'))
+        'islandora_authority_textfield_process',
+        'islandora_authority_element_process')
+    ),
+    'islandora_authority_hidden' => array(
+      '#input' => TRUE,
+      '#process' => array(
+        'islandora_authority_element_process')
+    )
   );
 }
 
@@ -131,6 +138,7 @@ function islandora_authority_menu() {
   );
 }
 
+//FIXME (minor): Doesn't really need $results if it's not doing hightlighting...  Anyway.
 function _build_match(&$results, &$solr_doc, &$field_info) {
   $map = array(); //fieldname => !variable_name
   $mapped = array(); //!variable_name => field value
@@ -140,17 +148,15 @@ function _build_match(&$results, &$solr_doc, &$field_info) {
   foreach ($field_info['fields'] as $hash => &$field) {
     if (isset($field['mapping'])) {
       $map[$hash] = $field['mapping'];
-      //$mapped[$field['mapping']] = $solr_doc->{$field['field_name']};
     }
     
-    //$fields[] = $hash;
     $keys[] = $hash;
-    $fields[] = (array)($solr_doc->{$field['field_name']});
+    $fields[] = (array)($solr_doc->{$field['display_field_name']});
   }
   
   $toReturn = array('alts' => array());
   $zipped = call_user_func_array('_zip', $fields);
-  dd($zipped);
+
   foreach ($zipped as $index => &$value) {
     $toMerge = array();
     foreach (array_combine($keys, $value) as $hash => $content) {
@@ -192,21 +198,29 @@ function _build_match(&$results, &$solr_doc, &$field_info) {
 function islandora_authority_get_fields(&$build_id, &$element, &$form_state = array('storage' => NULL, 'submitted' => FALSE, 'post' => array())) {
   $form = form_get_cache($build_id, $form_state);
   module_load_include('inc', 'objective_forms', 'Form');
+  
+  //FIXME (minor):  If this could be cached somewhere, it would be great.
   $obj_form = new Form($form, $form_state);
+  
   $el = $obj_form->findElement($element)->parent;
   $toReturn = array(
-    'pattern' => $el->islandora_authority_t_pattern,
+    'pattern' => $el->user_data['islandora_authority_t_pattern'],
     'current' => $element,
-    'fl' => array()
+    'fl' => array(),
+    'fq' => explode('~', $el->user_data['islandora_authority_fq'])
   );
+  
+  $element_types = islandora_authority_elements();
+  
   foreach($el->toArray() as $sibling) {
-    if (is_array($sibling) && (
-        $sibling['#type'] === 'authoritytextfield' ||
-        $sibling['#type'] === 'hidden')) {
+    if (is_array($sibling) && array_key_exists($sibling['#type'], $element_types)) {
       $toReturn['fields'][$sibling['#hash']] = array(
-        'field_name' => $sibling['#islandora_authority_solr_field'],
-        'mapping' => $sibling['#islandora_authority_mapping']);
-      $toReturn['fl'][] = $sibling['#islandora_authority_solr_field'];
+        'search_field_name' => $sibling['#user_data']['islandora_authority_solr_search_field'],
+        'display_field_name' => (!empty($sibling['#user_data']['islandora_authority_solr_display_field']) ?
+                                $sibling['#user_data']['islandora_authority_solr_display_field'] :
+                                $sibling['#user_data']['islandora_authority_solr_search_field']),
+        'mapping' => $sibling['#user_data']['islandora_authority_mapping']);
+      $toReturn['fl'][] =& $toReturn['fields'][$sibling['#hash']]['display_field_name'];
     }
   }
   return $toReturn;
@@ -214,33 +228,32 @@ function islandora_authority_get_fields(&$build_id, &$element, &$form_state = ar
 
 //Need to take which field to highlight as a parameter
 function islandora_authority_autocomplete($build_id, $element, $string = '') {
-  static $solr = NULL;
-  
-  if (is_null($solr)) {
-    module_load_include('php', 'islandora_solr_search', 'SolrPhpClient/Apache/Solr/Service');
-    $solrUrl = variable_get('islandora_solr_search_block_url', 'http://localhost:8080/solr/');
-    $pathParts = parse_url($solrUrl);
-    $solr = new Apache_Solr_Service($pathParts['host'], $pathParts['port'], $pathParts['path']);
-    $solr->setCreateDocuments(FALSE);
-  }
+  module_load_include('php', 'islandora_solr_search', 'SolrPhpClient/Apache/Solr/Service');
+  $solrUrl = variable_get('islandora_solr_search_block_url', 'http://localhost:8080/solr/');
+  $pathParts = parse_url($solrUrl);
+  $solr = new Apache_Solr_Service($pathParts['host'], $pathParts['port'], $pathParts['path']);
+  $solr->setCreateDocuments(FALSE);
   
   $matches = array();
+  
+  //FIXME (minor): If this could be cached at some level, it would be great...
   $fields = islandora_authority_get_fields($build_id, $element);
-  //dd($fields);
+  
   $results = $solr->search($string, 0, 10, array(
-          'qf' => $fields['fields'][$element]['field_name'],
-          'fl' => implode(',', $fields['fl']),
-          'qt' => variable_get('eac_cpf_completer_handler', 'dismax'),
+          'qf' => $fields['fields'][$element]['search_field_name'],
+          'fl' => implode(',', (array)$fields['fl']),
+          'qt' => variable_get('islandora_solr_search_block_request_handler', 'standard'),
+          'defType' => 'dismax',
+          'fq' => implode(' ', $fields['fq']),
           //'hl' => 'true',
           //'hl.fl' => '' //Not needed, should use qf fields by default.
       )
   );
   $matches = array();
   foreach ($results->response->docs as &$doc) {
-      $match =& $matches[$doc->PID];
-      $match = _build_match($results, $doc, $fields);
+      $matches[$doc->PID] = _build_match($results, $doc, $fields);
   }
-  dd($matches);
+  //dd($matches);
   print drupal_json($matches);
   exit();
 }
@@ -282,22 +295,26 @@ function islandora_authority_clean_form_id($id, $flush = FALSE) {
 
 function islandora_authority_theme() {
   return array(
-    'authoritytextfield' => array(),
-    'authorityelement' => array()
+    'islandora_authority_textfield' => array(),
+    //'authorityelement' => array(),
+    'islandora_authority_hidden' => array()
   );
 }
 
-function islandora_authority_authoritytextfield_process($element, $edit, &$form_state, $complete_form) {
+function islandora_authority_element_process($element, $edit, &$form_state, $complete_form) {
+  $element['#islandora_authority_id'] = implode('--', array(
+    $complete_form['#build_id'],
+    $element['#hash']
+  ));
+  return $element;
+}
+
+function islandora_authority_textfield_process($element, $edit, &$form_state, $complete_form) {
   $element['#autocomplete_path'] = implode('/', array(
     $element['#autocomplete_path'], 
     $complete_form['#build_id'],
     $element['#hash']
   ));
-  $element['#islandora_authority_id'] = implode('--', array(
-    $complete_form['#build_id'],
-    $element['#hash']
-  ));
-  //dd($element);
   return $element;
 }
 
@@ -307,7 +324,7 @@ function islandora_authority_authoritytextfield_process($element, $edit, &$form_
  * @param array $element 'preprocessed' element definition.
  * @return string Containing the markup for the given element 
  */
-function theme_authoritytextfield($element) {
+function theme_islandora_authority_textfield($element) {
   $size = empty($element['#size']) ? '' : ' size="'. $element['#size'] .'"';
   $maxlength = empty($element['#maxlength']) ? '' : ' maxlength="'. $element['#maxlength'] .'"';
   $class = array('form-text');
@@ -336,6 +353,10 @@ function theme_authoritytextfield($element) {
   $toReturn = theme('form_element', $element, $output) . $extra;
   //dd($toReturn);
   return $toReturn;
+}
+
+function theme_islandora_authority_hidden($element) {
+    return '<input type="hidden" name="'. $element['#name'] .'" id="'. $element['#islandora_authority_id'] .'" value="'. check_plain($element['#value']) ."\" ". drupal_attributes($element['#attributes']) ." />\n";
 }
 
 /**
@@ -374,6 +395,5 @@ function islandora_authority_element_expansion($element) {
       ));
     }
   }
-  //dsm($element);
   return $element;
 }
