@@ -68,7 +68,7 @@ function _zip() {
     for ($i = 0; $i < min($lengths); $i++) {
       $tuple = array();
       foreach ($arraysToZip as $key => &$toZip) {
-        $tuple[$key] =& $toZip[$i];
+        $tuple[$key] = & $toZip[$i];
       }
       $arrayToReturn[] = $tuple;
     }
@@ -97,24 +97,24 @@ function islandora_authority_elements() {
       '#attributes' => array(''),
       '#autocomplete_path' => 'islandora/authority',
       '#subfields' => array(
-        'eaccpf_name_forename_et' => array(
-          //'#fieldname' => 'eaccpf_name_forename_et',
-          '#input' => TRUE,
-          '#type' => 'authoritytextfield',
-          '#title' => 'Forename'
-        ),
-        'eaccpf_name_surname_et' => array(
-          //'#fieldname' => 'eaccpf_name_surname_et',
-          '#input' => TRUE,
-          '#type' => 'authoritytextfield',
-          '#title' => 'Surname'
-        ),
-        'PID' => array(
-          '#input' => TRUE,
-          '#type' => 'hidden'
-        )
+      'eaccpf_name_forename_et' => array(
+      //'#fieldname' => 'eaccpf_name_forename_et',
+      '#input' => TRUE,
+      '#type' => 'authoritytextfield',
+      '#title' => 'Forename'
+      ),
+      'eaccpf_name_surname_et' => array(
+      //'#fieldname' => 'eaccpf_name_surname_et',
+      '#input' => TRUE,
+      '#type' => 'authoritytextfield',
+      '#title' => 'Surname'
+      ),
+      'PID' => array(
+      '#input' => TRUE,
+      '#type' => 'hidden'
       )
-    ),*/
+      )
+      ), */
     'islandora_authority_textfield' => array(
       '#input' => TRUE,
       '#size' => 60,
@@ -137,7 +137,8 @@ function islandora_authority_menu() {
   return array(
     'islandora/authority' => array(
       'page callback' => 'islandora_authority_autocomplete',
-      'access callback' => TRUE
+      'access callback' => TRUE,
+      'type' => MENU_CALLBACK,
     )
   );
 }
@@ -155,7 +156,7 @@ function _build_match(&$results, &$solr_doc, &$field_info) {
     }
 
     $keys[] = $hash;
-    $fields[] = (array)($solr_doc->{$field['display_field_name']});
+    $fields[] = (array) ($solr_doc->{$field['display_field_name']});
   }
 
   $toReturn = array('alts' => array());
@@ -169,7 +170,7 @@ function _build_match(&$results, &$solr_doc, &$field_info) {
       }
       $toMerge[$hash] = $content;
     }
-    
+
     /* Something of an abuse of t()...  Should be changed to format_string for
      * Drupal 7 (as the templatey stuff is what we really want to do...)
      */
@@ -225,10 +226,10 @@ function islandora_authority_get_fields(&$build_id, &$element, &$form_state = ar
       $toReturn['fields'][$sibling['#hash']] = array(
         'search_field_name' => $sibling['#user_data']['islandora_authority_solr_search_field'],
         'display_field_name' => (!empty($sibling['#user_data']['islandora_authority_solr_display_field']) ?
-                                $sibling['#user_data']['islandora_authority_solr_display_field'] :
-                                $sibling['#user_data']['islandora_authority_solr_search_field']),
+            $sibling['#user_data']['islandora_authority_solr_display_field'] :
+            $sibling['#user_data']['islandora_authority_solr_search_field']),
         'mapping' => $sibling['#user_data']['islandora_authority_mapping']);
-      $toReturn['fl'][] =& $toReturn['fields'][$sibling['#hash']]['display_field_name'];
+      $toReturn['fl'][] = & $toReturn['fields'][$sibling['#hash']]['display_field_name'];
     }
   }
   return $toReturn;
@@ -248,18 +249,18 @@ function islandora_authority_autocomplete($build_id, $element, $string = '') {
   $fields = islandora_authority_get_fields($build_id, $element);
 
   $results = $solr->search($string, 0, 10, array(
-          'qf' => $fields['fields'][$element]['search_field_name'],
-          'fl' => implode(',', (array)$fields['fl']),
-          'qt' => variable_get('islandora_solr_search_block_request_handler', 'standard'),
-          'defType' => 'dismax',
-          'fq' => implode(' ', $fields['fq']),
-          //'hl' => 'true',
-          //'hl.fl' => '' //Not needed, should use qf fields by default.
+    'qf' => $fields['fields'][$element]['search_field_name'],
+    'fl' => implode(',', (array) $fields['fl']),
+    'qt' => variable_get('islandora_solr_search_block_request_handler', 'standard'),
+    'defType' => 'dismax',
+    'fq' => implode(' ', $fields['fq']),
+      //'hl' => 'true',
+      //'hl.fl' => '' //Not needed, should use qf fields by default.
       )
   );
   $matches = array();
   foreach ($results->response->docs as &$doc) {
-      $matches[$doc->PID] = _build_match($results, $doc, $fields);
+    $matches[$doc->PID] = _build_match($results, $doc, $fields);
   }
   //dd($matches);
   print drupal_json($matches);
@@ -269,17 +270,17 @@ function islandora_authority_autocomplete($build_id, $element, $string = '') {
 /*
  * Exactly the same as drupal form_clean_id, EXCEPT we don't wipe out underscores...
 
-function islandora_authority_clean_form_id($id, $flush = FALSE) {
+  function islandora_authority_clean_form_id($id, $flush = FALSE) {
   static $seen_ids = array();
 
   if ($flush) {
-    $seen_ids = array();
-    form_clean_id($id, $flush);
-    return;
+  $seen_ids = array();
+  form_clean_id($id, $flush);
+  return;
   }
 
   if (strpos($id, '_') !== FALSE) {
-    return form_clean_id($id);
+  return form_clean_id($id);
   }
   $id = str_replace(array('][', ' '), '-', $id);
 
@@ -290,16 +291,14 @@ function islandora_authority_clean_form_id($id, $flush = FALSE) {
   // outputting duplicate IDs, which would break JS code and XHTML
   // validity anyways. For now, it's an acceptable stopgap solution.
   if (isset($seen_ids[$id])) {
-    $id = $id . '-' . $seen_ids[$id]++;
+  $id = $id . '-' . $seen_ids[$id]++;
   }
   else {
-    $seen_ids[$id] = 1;
+  $seen_ids[$id] = 1;
   }
 
   return $id;
-}*/
-
-
+  } */
 
 function islandora_authority_theme() {
   return array(
@@ -313,7 +312,7 @@ function islandora_authority_element_process($element, $edit, &$form_state, $com
   $element['#islandora_authority_id'] = implode('--', array(
     $complete_form['#build_id'],
     $element['#hash']
-  ));
+      ));
   return $element;
 }
 
@@ -322,7 +321,7 @@ function islandora_authority_textfield_process($element, $edit, &$form_state, $c
     $element['#autocomplete_path'],
     $complete_form['#build_id'],
     $element['#hash']
-  ));
+      ));
   return $element;
 }
 
@@ -333,8 +332,8 @@ function islandora_authority_textfield_process($element, $edit, &$form_state, $c
  * @return string Containing the markup for the given element
  */
 function theme_islandora_authority_textfield($element) {
-  $size = empty($element['#size']) ? '' : ' size="'. $element['#size'] .'"';
-  $maxlength = empty($element['#maxlength']) ? '' : ' maxlength="'. $element['#maxlength'] .'"';
+  $size = empty($element['#size']) ? '' : ' size="' . $element['#size'] . '"';
+  $maxlength = empty($element['#maxlength']) ? '' : ' maxlength="' . $element['#maxlength'] . '"';
   $class = array('form-text');
   $extra = '';
   $output = '';
@@ -343,18 +342,18 @@ function theme_islandora_authority_textfield($element) {
     drupal_add_js("$mod_path/js/autocomplete.js", 'module');
     drupal_add_css("$mod_path/css/autocomplete.css", 'module');
     $class[] = 'form-islandora_authority_autocomplete';
-    $extra =  '<input class="islandora_authority_autocomplete" type="hidden" id="'. $element['#islandora_authority_id'] .'-autocomplete" value="'. check_url(url($element['#autocomplete_path'], array('absolute' => TRUE))) .'" disabled="disabled" />';
+    $extra = '<input class="islandora_authority_autocomplete" type="hidden" id="' . $element['#islandora_authority_id'] . '-autocomplete" value="' . check_url(url($element['#autocomplete_path'], array('absolute' => TRUE))) . '" disabled="disabled" />';
   }
   _form_set_class($element, $class);
 
   if (isset($element['#field_prefix'])) {
-    $output .= '<span class="field-prefix">'. $element['#field_prefix'] .'</span> ';
+    $output .= '<span class="field-prefix">' . $element['#field_prefix'] . '</span> ';
   }
 
-  $output .= '<input type="text"'. $maxlength .' name="'. $element['#name'] .'" id="'. $element['#islandora_authority_id'] .'"'. $size .' value="'. check_plain($element['#value']) .'"'. drupal_attributes($element['#attributes']) .' />';
+  $output .= '<input type="text"' . $maxlength . ' name="' . $element['#name'] . '" id="' . $element['#islandora_authority_id'] . '"' . $size . ' value="' . check_plain($element['#value']) . '"' . drupal_attributes($element['#attributes']) . ' />';
 
   if (isset($element['#field_suffix'])) {
-    $output .= ' <span class="field-suffix">'. $element['#field_suffix'] .'</span>';
+    $output .= ' <span class="field-suffix">' . $element['#field_suffix'] . '</span>';
   }
 
   //dd($element);
@@ -364,7 +363,7 @@ function theme_islandora_authority_textfield($element) {
 }
 
 function theme_islandora_authority_hidden($element) {
-    return '<input type="hidden" name="'. $element['#name'] .'" id="'. $element['#islandora_authority_id'] .'" value="'. check_plain($element['#value']) ."\" ". drupal_attributes($element['#attributes']) ." />\n";
+  return '<input type="hidden" name="' . $element['#name'] . '" id="' . $element['#islandora_authority_id'] . '" value="' . check_plain($element['#value']) . "\" " . drupal_attributes($element['#attributes']) . " />\n";
 }
 
 /**
@@ -375,9 +374,9 @@ function theme_islandora_authority_hidden($element) {
 function theme_authorityelement($element) {
   $class = 'form-authority_element';
   if (isset($element['#attributes']['class'])) {
-    $class .= ' '. $element['#attributes']['class'];
+    $class .= ' ' . $element['#attributes']['class'];
   }
-  $element['#children'] = '<div class="'. $class .'">'. (!empty($element['#children']) ? $element['#children'] : '') .'</div>';
+  $element['#children'] = '<div class="' . $class . '">' . (!empty($element['#children']) ? $element['#children'] : '') . '</div>';
   if ($element['#title'] || $element['#description']) {
     unset($element['#id']);
     return theme('form_element', $element, $element['#children']);
@@ -386,6 +385,7 @@ function theme_authorityelement($element) {
     return $element['#children'];
   }
 }
+
 /**
  * @deprecated calling the elements indivudually works...  Needs some way to configure which fields to get from Solr.
  * @param type $element
@@ -400,7 +400,7 @@ function islandora_authority_element_expansion($element) {
         '#autocomplete_path' => $element['#autocomplete_path'] . '/' . urlencode($key),
         '#id' => form_clean_id('edit-' . implode('-', $id)),
         '#attributes' => array('field' => $key)
-      ));
+          ));
     }
   }
   return $element;
