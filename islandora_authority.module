@@ -204,24 +204,21 @@ function _build_match(&$results, &$solr_doc, &$field_info) {
  *  )
  * )
  */
-function islandora_authority_get_fields(&$build_id, &$element, &$form_state = array('storage' => NULL, 'submitted' => FALSE, 'post' => array())) {
+function islandora_authority_get_fields(&$build_id, &$element_hash, &$form_state = array('storage' => NULL, 'submitted' => FALSE, 'post' => array())) {
   $form = form_get_cache($build_id, $form_state);
   module_load_include('inc', 'objective_forms', 'Form');
-
   //FIXME (minor):  If this could be cached somewhere, it would be great.
   $obj_form = new Form($form, $form_state);
-
-  $el = $obj_form->findElement($element)->parent;
+  $element = $obj_form->findElement($element_hash);
+  $parent = $element->parent;
   $toReturn = array(
-    'pattern' => $el->user_data['islandora_authority_t_pattern'],
-    'current' => $element,
+    'pattern' => $parent->user_data['islandora_authority_t_pattern'],
+    'current' => $element_hash,
     'fl' => array(),
-    'fq' => explode('~', $el->user_data['islandora_authority_fq'])
+    'fq' => explode('~', $element->user_data['islandora_authority_fq'])
   );
-
   $element_types = islandora_authority_elements();
-
-  foreach ($el->toArray() as $sibling) {
+  foreach ($parent->toArray() as $sibling) {
     if (is_array($sibling) && array_key_exists($sibling['#type'], $element_types)) {
       $toReturn['fields'][$sibling['#hash']] = array(
         'search_field_name' => $sibling['#user_data']['islandora_authority_solr_search_field'],
@@ -238,31 +235,25 @@ function islandora_authority_get_fields(&$build_id, &$element, &$form_state = ar
 //Need to take which field to highlight as a parameter
 function islandora_authority_autocomplete($build_id, $element, $string = '') {
   module_load_include('php', 'islandora_solr_search', 'SolrPhpClient/Apache/Solr/Service');
-  $solrUrl = variable_get('islandora_solr_search_block_url', 'http://localhost:8080/solr/');
-  $pathParts = parse_url($solrUrl);
-  $solr = new Apache_Solr_Service($pathParts['host'], $pathParts['port'], $pathParts['path']);
+  $solr_url = variable_get('islandora_solr_search_block_url', 'http://localhost:8080/solr/');
+  $path_parts = parse_url($solr_url);
+  $solr = new Apache_Solr_Service($path_parts['host'], $path_parts['port'], $path_parts['path']);
   $solr->setCreateDocuments(FALSE);
-
   $matches = array();
-
-  //FIXME (minor): If this could be cached at some level, it would be great...
+  // FIXME (minor): If this could be cached at some level, it would be great...
   $fields = islandora_authority_get_fields($build_id, $element);
-
   $results = $solr->search($string, 0, 10, array(
     'qf' => $fields['fields'][$element]['search_field_name'],
     'fl' => implode(',', (array) $fields['fl']),
-    'qt' => variable_get('islandora_solr_search_block_request_handler', 'standard'),
-    'defType' => 'dismax',
     'fq' => implode(' ', $fields['fq']),
-      //'hl' => 'true',
-      //'hl.fl' => '' //Not needed, should use qf fields by default.
-      )
-  );
+    'defType' => 'dismax'
+  ));
   $matches = array();
-  foreach ($results->response->docs as &$doc) {
-    $matches[$doc->PID] = _build_match($results, $doc, $fields);
+  if (isset($results)) {
+    foreach ($results->response->docs as &$doc) {
+      $matches[$doc->PID] = _build_match($results, $doc, $fields);
+    }
   }
-  //dd($matches);
   print drupal_json($matches);
   exit();
 }
