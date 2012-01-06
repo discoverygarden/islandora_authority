@@ -300,7 +300,7 @@ function islandora_authority_theme() {
 }
 
 function islandora_authority_element_process($element, $edit, &$form_state, $complete_form) {
-  $element['#islandora_authority_id'] = implode('--', array(
+  $element['#id'] = $element['#islandora_authority_id'] = implode('--', array(
     $complete_form['#build_id'],
     $element['#hash']
       ));
