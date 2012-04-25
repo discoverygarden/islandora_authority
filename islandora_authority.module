@@ -183,7 +183,9 @@ function _build_match(&$results, &$solr_doc, &$field_info) {
       $toReturn['alts'][$index - 1] = $toMerge;
     }
   }
-
+  if (empty($toReturn['alts'])) {
+    unset($toReturn['alts']);
+  }
   return $toReturn;
 }
 
@@ -246,8 +248,8 @@ function islandora_authority_autocomplete($build_id, $element, $string = '') {
     'qf' => $fields['fields'][$element]['search_field_name'],
     'fl' => implode(',', (array) $fields['fl']),
     'fq' => implode(' ', $fields['fq']),
-    'defType' => 'dismax'
-  ));
+    'defType' => 'dismax')
+  );
   $matches = array();
   if (isset($results)) {
     foreach ($results->response->docs as &$doc) {
