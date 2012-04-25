@@ -333,7 +333,7 @@ Drupal.settings.islandora_authority.jsAC.prototype.showSubmenu = function (node)
  */
 Drupal.settings.islandora_authority.jsAC.prototype.found = function (matches) {
   // If no value in the textfield, do not show the popup.
-  if (!this.input.value.length) {
+  if (!this.input.value.length || matches.length == 0) {
     return false;
   }
 
