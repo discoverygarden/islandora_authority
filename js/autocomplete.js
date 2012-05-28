@@ -116,16 +116,16 @@ Drupal.settings.islandora_authority.jsAC.prototype.select = function (node) {
   var obj = node.autocompleteSet;
   var parents = this.input.id.split('--');
   for(var prop in obj) {
-    if(obj.hasOwnProperty(prop) && typeof obj[prop] !== 'function' && 
+    if(obj.hasOwnProperty(prop) && typeof obj[prop] !== 'function' &&
       prop != 'full-display' && prop != 'alts') {
       //slice to get rid of the name of the current field
       var id_parts = parents.slice(0, parents.length - 1);
-      
+
       //Add the part which the current property represents, while making the property
       //  name match what should have been put into the id, so we can select the
       //  relevant field below.
       id_parts.push(prop.replace(/(\]\[|_| )/g, '-'));
-      
+
       //Update the contents of the required field.
       $('#'+id_parts.join('--')).val(obj[prop]);
     }
@@ -169,7 +169,7 @@ Drupal.settings.islandora_authority.jsAC.prototype.selectDown = function () {
  */
 Drupal.settings.islandora_authority.jsAC.prototype.selectUp = function () {
   var prev = false;
-  if (this.selected2) { 
+  if (this.selected2) {
     prev = $(this.selected2).prevAll('li:first')[0];
     if (prev) {
       this.highlightSub(prev);
@@ -219,7 +219,7 @@ Drupal.settings.islandora_authority.jsAC.prototype.highlight = function (node) {
   }
   $(node).addClass('selected');
   this.selected = node;
-  
+
   //Try to show a submenu (additional decisions made there)
   this.showSubmenu(this.selected);
 };
@@ -261,14 +261,14 @@ Drupal.settings.islandora_authority.jsAC.prototype.hidePopup = function (keycode
     }
     //this.input.value = this.selected.autocompleteValue;
   }
-  
+
   // Hide popups
   var popup = this.popup2;
   if (popup) {
     delete this.popup2;
     $(popup).fadeOut('fast', function() {$(popup).remove();});
   }
-  
+
   popup = this.popup;
   if (popup) {
     delete this.popup;
@@ -293,7 +293,7 @@ Drupal.settings.islandora_authority.jsAC.prototype.populatePopup = function () {
   $(this.popup).css({
     marginTop: this.input.offsetHeight +'px',
     width: (this.input.offsetWidth) +'px',
-    overflow: 'visible'
+    overflow: 'hidden'
   });
   $(this.input).before(this.popup);
 
@@ -308,11 +308,11 @@ Drupal.settings.islandora_authority.jsAC.prototype.showSubmenu = function (node)
     $(this.popup2).hide();
   }
   this.selected2 = false;
-  if (typeof node.alt_popup != 'undefined') { 
+  if (typeof node.alt_popup != 'undefined') {
     /*this.popup2 = document.createElement('div');
     this.popup2.id = 'islandora_authority_submenu';
     this.popup2.owner = this;
-    
+
     */
 
     this.popup2 = node.alt_popup;
@@ -323,7 +323,7 @@ Drupal.settings.islandora_authority.jsAC.prototype.showSubmenu = function (node)
         top: (node.offsetTop) + 'px'
       })
       .show();
-      
+
     //$(this.selected).before(this.popup2);
   }
 };
@@ -339,6 +339,7 @@ Drupal.settings.islandora_authority.jsAC.prototype.found = function (matches) {
 
   // Prepare matches
   var ul = document.createElement('ul');
+  $(ul).css({maxHeight: '180px', overflowX: 'auto', overflowY: 'auto'});
   var ac = this;
   for (var key in matches) {
     var obj = matches[key];
@@ -354,7 +355,7 @@ Drupal.settings.islandora_authority.jsAC.prototype.found = function (matches) {
       .mouseleave(function () {
         ac.unhighlight(this);
       }); //Gonna require some shenanigans to make it stay selected when using the mouse...
-       
+
     var alt_ul = document.createElement('ul');
     var alts = obj['alts']
     for (var prop in alts) {
@@ -379,12 +380,12 @@ Drupal.settings.islandora_authority.jsAC.prototype.found = function (matches) {
         $(alt_ul).append(alt_li).hide();
       }
     }
-    
+
     if (alt_ul.childNodes.length > 0) {
       li.alt_popup = alt_ul;
       $(li).append(alt_ul);
     }
-  
+
     li.autocompleteSet = obj;
     $(ul).append(li);
   }
