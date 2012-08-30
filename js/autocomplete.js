@@ -41,7 +41,15 @@ Drupal.settings.islandora_authority.jsAC = function (input, db) {
   $(this.input)
     .keydown(function (event) {return ac.onkeydown(this, event);})
     .keyup(function (event) {ac.onkeyup(this, event);})
-    .blur(function () {ac.hidePopup();ac.db.cancel();});
+    .blur(function () {
+        $(":not(#islandora_authority_autocomplete)").click(function(event) {
+            event.stopPropagation();
+            //if($("#islandora_authority_autocomplete").is(":visible")) { //this line was causing some issues
+            if($("#islandora_authority_autocomplete").css("display") == "block") {
+                ac.hidePopup();ac.db.cancel();
+            }
+        });
+    });
 };
 
 /**
