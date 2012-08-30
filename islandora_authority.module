@@ -332,6 +332,7 @@ function theme_islandora_authority_textfield($element) {
   $output = '';
   if ($element['#autocomplete_path'] && menu_valid_path(array('link_path' => $element['#autocomplete_path']))) {
     $mod_path = drupal_get_path('module', 'islandora_authority');
+    drupal_add_js("$mod_path/js/jquery.scrollTo-1.4.3-min.js", 'module');
     drupal_add_js("$mod_path/js/autocomplete.js", 'module');
     drupal_add_css("$mod_path/css/autocomplete.css", 'module');
     $class[] = 'form-islandora_authority_autocomplete';

@@ -3,7 +3,6 @@
 /**
  * Attaches the autocomplete behavior to all required fields
  */
-
 if (typeof Drupal.settings.islandora_authority == 'undefined') {
   Drupal.settings.islandora_authority = new Object();
 }
@@ -39,11 +38,18 @@ Drupal.settings.islandora_authority.jsAC = function (input, db) {
   var ac = this;
   this.input = input;
   this.db = db;
-
   $(this.input)
     .keydown(function (event) {return ac.onkeydown(this, event);})
     .keyup(function (event) {ac.onkeyup(this, event);})
-    .blur(function () {ac.hidePopup();ac.db.cancel();});
+    .blur(function () {
+        $(":not(#islandora_authority_autocomplete)").click(function(event) {
+            event.stopPropagation();
+            //if($("#islandora_authority_autocomplete").is(":visible")) { //this line was causing some issues
+            if($("#islandora_authority_autocomplete").css("display") == "block") {
+                ac.hidePopup();ac.db.cancel();
+            }
+        });
+    });
 };
 
 /**
@@ -154,14 +160,17 @@ Drupal.settings.islandora_authority.jsAC.prototype.selectDown = function () {
     var next = $(this.selected).nextAll('li:first')[0];
     if (next) {
       this.highlight(this.selected.nextSibling);
+      $('#islandora_authority_autocomplete ul').scrollTo(next);
     }
   }
   else {
     var lis = $('li', this.popup);
     if (lis.size() > 0) {
       this.highlight(lis.get(0));
+      $('#islandora_authority_autocomplete ul').scrollTo(lis.get(0));
     }
   }
+ 
 };
 
 /**
@@ -173,15 +182,17 @@ Drupal.settings.islandora_authority.jsAC.prototype.selectUp = function () {
     prev = $(this.selected2).prevAll('li:first')[0];
     if (prev) {
       this.highlightSub(prev);
+      $('#islandora_authority_autocomplete ul').scrollTo(prev);
     }
   }
   else if (this.selected) {
     prev = $(this.selected).prevAll('li:first')[0];
     if (prev) {
       this.highlight(prev);
+      $('#islandora_authority_autocomplete ul').scrollTo(prev);
     }
   }
-};
+ };
 
 Drupal.settings.islandora_authority.jsAC.prototype.selectLeft = function () {
   if (this.selected2) {
@@ -252,7 +263,7 @@ Drupal.settings.islandora_authority.jsAC.prototype.unhighlightSub = function (no
  */
 Drupal.settings.islandora_authority.jsAC.prototype.hidePopup = function (keycode) {
   // Select item if the right key or mousebutton was pressed...  seems kinda redundant?
-  if ((keycode && keycode != 46 && keycode != 8 && keycode != 27) || !keycode) {
+  if ((keycode && keycode != 46 && keycode != 8 && keycode != 27) || (!keycode)) {
     if (this.selected2) {
       this.select(this.selected2);
     }
@@ -261,9 +272,9 @@ Drupal.settings.islandora_authority.jsAC.prototype.hidePopup = function (keycode
     }
     //this.input.value = this.selected.autocompleteValue;
   }
-
   // Hide popups
-  var popup = this.popup2;
+  
+ var popup = this.popup2;
   if (popup) {
     delete this.popup2;
     $(popup).fadeOut('fast', function() {$(popup).remove();});
