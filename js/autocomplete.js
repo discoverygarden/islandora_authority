@@ -350,7 +350,7 @@ Drupal.settings.islandora_authority.jsAC.prototype.found = function (matches) {
 
   // Prepare matches
   var ul = document.createElement('ul');
-  $(ul).css({maxHeight: '180px', overflowX: 'auto', overflowY: 'auto'});
+  $(ul).css({maxHeight: '180px', overflowX: 'scroll', overflowY: 'auto'});
   var ac = this;
   for (var key in matches) {
     var obj = matches[key];
