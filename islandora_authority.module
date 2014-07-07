@@ -244,7 +244,7 @@ function islandora_authority_autocomplete($build_id, $element, $string = '') {
   $matches = array();
   // FIXME (minor): If this could be cached at some level, it would be great...
   $fields = islandora_authority_get_fields($build_id, $element);
-  $results = $solr->search($string, 0, 100000, array(
+  $results = $solr->search($string, 0, 1000, array(
     'qf' => $fields['fields'][$element]['search_field_name'],
     'fl' => implode(',', (array) $fields['fl']),
     'fq' => implode(' ', $fields['fq']),
