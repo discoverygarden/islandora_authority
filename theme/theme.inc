@@ -35,8 +35,6 @@ function theme_islandora_authority_textfield($variables) {
   element_set_attributes($element, array('id', 'name', 'value', 'size', 'maxlength'));
   _form_set_class($element, array('form-text'));
 
-  dsm('a buh?');
-
   $extra = '';
   if ($element['#autocomplete_path'] && drupal_valid_path($element['#autocomplete_path'])) {
     $element['#attributes']['class'][] = 'form-islandora-authority-autocomplete';
@@ -50,11 +48,7 @@ function theme_islandora_authority_textfield($variables) {
     $extra = '<input' . drupal_attributes($attributes) . ' />';
   }
 
-  $element_copy = $element;
-  $element_copy['#autocomplete_path'] = '';
-  $element_copy['#theme'] = $element_copy['#type'] = 'textfield';
-
-  $output = drupal_render($element_copy);
+  $output = '<input ' . drupal_attributes($element['#attributes']) . ' />';
 
   return $output . $extra;
 }
