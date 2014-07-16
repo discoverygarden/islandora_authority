@@ -1,422 +1,250 @@
-// $Id: autocomplete.js,v 1.23 2008/01/04 11:53:21 goba Exp $
+(function ($) {
 
 /**
- * Attaches the autocomplete behavior to all required fields
+ * Attaches the autocomplete behavior to all required fields.
  */
-if (typeof Drupal.settings.islandora_authority == 'undefined') {
-  Drupal.settings.islandora_authority = new Object();
-}
-Drupal.behaviors.islandora_authority_autocomplete = function (context) {
-  var acdb = [];
-  $('input.islandora_authority_autocomplete:not(.islandora_authority_autocomplete-processed)', context).each(function () {
-    var uri = this.value;
-    if (!acdb[uri]) {
-      acdb[uri] = new Drupal.settings.islandora_authority.ACDB(uri);
-    }
-    var input = $('#' + this.id.substr(0, this.id.length - 13))
-      .attr('autocomplete', 'OFF')[0];
-    $(input.form).submit(Drupal.settings.islandora_authority.autocompleteSubmit);
-    new Drupal.settings.islandora_authority.jsAC(input, acdb[uri]);
-    $(this).addClass('islandora_authority_autocomplete-processed');
-  });
+Drupal.behaviors.autocomplete = {
+  attach: function (context, settings) {
+    var acdb = [];
+    $('input.autocomplete', context).once('autocomplete', function () {
+      var uri = this.value;
+      if (!acdb[uri]) {
+        acdb[uri] = new Drupal.ACDB(uri);
+      }
+      var $input = $('#' + this.id.substr(0, this.id.length - 13))
+        .attr('autocomplete', 'OFF')
+        .attr('aria-autocomplete', 'list');
+      $($input[0].form).submit(Drupal.autocompleteSubmit);
+      $input.parent()
+        .attr('role', 'application')
+        .append($('<span class="element-invisible" aria-live="assertive"></span>')
+          .attr('id', $input.attr('id') + '-autocomplete-aria-live')
+        );
+      new Drupal.jsAC($input, acdb[uri]);
+    });
+  }
 };
 
 /**
  * Prevents the form from submitting if the suggestions popup is open
  * and closes the suggestions popup when doing so.
  */
-Drupal.settings.islandora_authority.autocompleteSubmit = function () {
-  return $('#islandora_authority_autocomplete').each(function () {
+Drupal.autocompleteSubmit = function () {
+  return $('#autocomplete').each(function () {
     this.owner.hidePopup();
-  }).size() == 0;
+  }).length == 0;
 };
 
 /**
- * An AutoComplete object
+ * An AutoComplete object.
  */
-Drupal.settings.islandora_authority.jsAC = function (input, db) {
+Drupal.jsAC = function ($input, db) {
   var ac = this;
-  this.input = input;
+  this.input = $input[0];
+  this.ariaLive = $('#' + this.input.id + '-autocomplete-aria-live');
   this.db = db;
-  $(this.input)
-    .keydown(function (event) {return ac.onkeydown(this, event);})
-    .keyup(function (event) {ac.onkeyup(this, event);})
-    .blur(function () {
-        $(":not(#islandora_authority_autocomplete)").click(function(event) {
-            event.stopPropagation();
-            //if($("#islandora_authority_autocomplete").is(":visible")) { //this line was causing some issues
-            if($("#islandora_authority_autocomplete").css("display") == "block") {
-                ac.hidePopup();ac.db.cancel();
-            }
-        });
-    });
+
+  $input
+    .keydown(function (event) { return ac.onkeydown(this, event); })
+    .keyup(function (event) { ac.onkeyup(this, event); })
+    .blur(function () { ac.hidePopup(); ac.db.cancel(); });
+
 };
 
 /**
- * Handler for the "keydown" event
+ * Handler for the "keydown" event.
  */
-Drupal.settings.islandora_authority.jsAC.prototype.onkeydown = function (input, e) {
+Drupal.jsAC.prototype.onkeydown = function (input, e) {
   if (!e) {
     e = window.event;
   }
   switch (e.keyCode) {
-    case 40: // down arrow
+    case 40: // down arrow.
       this.selectDown();
       return false;
-    case 38: // up arrow
+    case 38: // up arrow.
       this.selectUp();
       return false;
-    case 37:
-      this.selectLeft();
-      return false;
-    case 39:
-      this.selectRight();
-      return false;
-    default: // all other keys
+    default: // All other keys.
       return true;
   }
 };
 
 /**
- * Handler for the "keyup" event
+ * Handler for the "keyup" event.
  */
-Drupal.settings.islandora_authority.jsAC.prototype.onkeyup = function (input, e) {
+Drupal.jsAC.prototype.onkeyup = function (input, e) {
   if (!e) {
     e = window.event;
   }
   switch (e.keyCode) {
-    case 16: // shift
-    case 17: // ctrl
-    case 18: // alt
-    case 20: // caps lock
-    case 33: // page up
-    case 34: // page down
-    case 35: // end
-    case 36: // home
-    case 37: // left arrow
-    case 38: // up arrow
-    case 39: // right arrow
-    case 40: // down arrow
+    case 16: // Shift.
+    case 17: // Ctrl.
+    case 18: // Alt.
+    case 20: // Caps lock.
+    case 33: // Page up.
+    case 34: // Page down.
+    case 35: // End.
+    case 36: // Home.
+    case 37: // Left arrow.
+    case 38: // Up arrow.
+    case 39: // Right arrow.
+    case 40: // Down arrow.
       return true;
 
-    case 9:  // tab
-    case 13: // enter
-    case 27: // esc
+    case 9:  // Tab.
+    case 13: // Enter.
+    case 27: // Esc.
       this.hidePopup(e.keyCode);
       return true;
 
-    default: // all other keys
-      if (input.value.length > 0)
+    default: // All other keys.
+      if (input.value.length > 0 && !input.readOnly) {
         this.populatePopup();
-      else
+      }
+      else {
         this.hidePopup(e.keyCode);
+      }
       return true;
   }
 };
 
 /**
- * Puts the currently highlighted suggestion into the autocomplete field
+ * Puts the currently highlighted suggestion into the autocomplete field.
  */
-Drupal.settings.islandora_authority.jsAC.prototype.select = function (node) {
-  //TODO:  Test this...
-  var obj = node.autocompleteSet;
-  var parents = this.input.id.split('--');
-  for(var prop in obj) {
-    if(obj.hasOwnProperty(prop) && typeof obj[prop] !== 'function' &&
-      prop != 'full-display' && prop != 'alts') {
-      //slice to get rid of the name of the current field
-      var id_parts = parents.slice(0, parents.length - 1);
-
-      //Add the part which the current property represents, while making the property
-      //  name match what should have been put into the id, so we can select the
-      //  relevant field below.
-      id_parts.push(prop.replace(/(\]\[|_| )/g, '-'));
-
-      //Update the contents of the required field.
-      $('#'+id_parts.join('--')).val(obj[prop]);
-    }
-  }
-  this.unhighlightSub(this.selected2);
-  this.unhighlight(this.selected);
+Drupal.jsAC.prototype.select = function (node) {
+  this.input.value = $(node).data('autocompleteValue');
 };
 
 /**
- * Highlights the next suggestion
+ * Highlights the next suggestion.
  */
-Drupal.settings.islandora_authority.jsAC.prototype.selectDown = function () {
-  if (this.selected2){
-    var next = $(this.selected2).nextAll('li:first')[0];
-    if (next) {
-      this.highlightSub(next);
-    }
-    else {
-      var lis = $('li', this.popup2);
-      if (lis.size() > 0) {
-        this.highlightSub(lis.get(0));
-      }
-    }
+Drupal.jsAC.prototype.selectDown = function () {
+  if (this.selected && this.selected.nextSibling) {
+    this.highlight(this.selected.nextSibling);
   }
-  else if (this.selected){
-    var next = $(this.selected).nextAll('li:first')[0];
-    if (next) {
-      this.highlight(this.selected.nextSibling);
-      $('#islandora_authority_autocomplete ul').scrollTo(next);
-    }
-  }
-  else {
+  else if (this.popup) {
     var lis = $('li', this.popup);
-    if (lis.size() > 0) {
+    if (lis.length > 0) {
       this.highlight(lis.get(0));
-      $('#islandora_authority_autocomplete ul').scrollTo(lis.get(0));
     }
-  }
- 
-};
-
-/**
- * Highlights the previous suggestion
- */
-Drupal.settings.islandora_authority.jsAC.prototype.selectUp = function () {
-  var prev = false;
-  if (this.selected2) {
-    prev = $(this.selected2).prevAll('li:first')[0];
-    if (prev) {
-      this.highlightSub(prev);
-      $('#islandora_authority_autocomplete ul').scrollTo(prev);
-    }
-  }
-  else if (this.selected) {
-    prev = $(this.selected).prevAll('li:first')[0];
-    if (prev) {
-      this.highlight(prev);
-      $('#islandora_authority_autocomplete ul').scrollTo(prev);
-    }
-  }
- };
-
-Drupal.settings.islandora_authority.jsAC.prototype.selectLeft = function () {
-  if (this.selected2) {
-    this.unhighlightSub(this.selected2);
-    this.highlight(this.selected);
-  }
-};
-
-Drupal.settings.islandora_authority.jsAC.prototype.selectRight = function () {
-  if (this.selected2) {
-    //Insert the given object...
-    this.hidePopup(false);
-  }
-  else if (this.selected) {
-    this.showSubmenu(this.selected);
-    if (typeof this.popup2 != 'undefined') {
-      this.highlightSub(this.popup2.firstChild);
-    }
-  }
-  else {
-    //Dunno...
-    //this.select(this.selected);
   }
 };
 
 /**
- * Highlights a suggestion
+ * Highlights the previous suggestion.
  */
-Drupal.settings.islandora_authority.jsAC.prototype.highlight = function (node) {
-  if (this.selected2) { //Deselect the submenu entry.
-    this.unhighlightSub(this.selected2);
+Drupal.jsAC.prototype.selectUp = function () {
+  if (this.selected && this.selected.previousSibling) {
+    this.highlight(this.selected.previousSibling);
   }
+};
+
+/**
+ * Highlights a suggestion.
+ */
+Drupal.jsAC.prototype.highlight = function (node) {
   if (this.selected) {
     $(this.selected).removeClass('selected');
   }
   $(node).addClass('selected');
   this.selected = node;
-
-  //Try to show a submenu (additional decisions made there)
-  this.showSubmenu(this.selected);
-};
-
-Drupal.settings.islandora_authority.jsAC.prototype.highlightSub = function (node) {
-  if (this.selected2) {
-    $(this.selected2).removeClass('selected');
-  }
-  $(node).addClass('selected');
-  this.selected2 = node;
+  $(this.ariaLive).html($(this.selected).html());
 };
 
 /**
- * Unhighlights a suggestion
+ * Unhighlights a suggestion.
  */
-Drupal.settings.islandora_authority.jsAC.prototype.unhighlight = function (node) {
-  if (!this.selected2) {
-    $(node).removeClass('selected');
-    this.selected = false;
-  }
-};
-
-Drupal.settings.islandora_authority.jsAC.prototype.unhighlightSub = function (node) {
+Drupal.jsAC.prototype.unhighlight = function (node) {
   $(node).removeClass('selected');
-  this.selected2 = false;
+  this.selected = false;
+  $(this.ariaLive).empty();
 };
 
 /**
- * Hides the autocomplete suggestions
+ * Hides the autocomplete suggestions.
  */
-Drupal.settings.islandora_authority.jsAC.prototype.hidePopup = function (keycode) {
-  // Select item if the right key or mousebutton was pressed...  seems kinda redundant?
-  if ((keycode && keycode != 46 && keycode != 8 && keycode != 27) || (!keycode)) {
-    if (this.selected2) {
-      this.select(this.selected2);
-    }
-    else if (this.selected) {
-      this.select(this.selected);
-    }
-    //this.input.value = this.selected.autocompleteValue;
+Drupal.jsAC.prototype.hidePopup = function (keycode) {
+  // Select item if the right key or mousebutton was pressed.
+  if (this.selected && ((keycode && keycode != 46 && keycode != 8 && keycode != 27) || !keycode)) {
+    this.input.value = $(this.selected).data('autocompleteValue');
   }
-  // Hide popups
-  
- var popup = this.popup2;
+  // Hide popup.
+  var popup = this.popup;
   if (popup) {
-    delete this.popup2;
-    $(popup).fadeOut('fast', function() {$(popup).remove();});
-  }
-
-  popup = this.popup;
-  if (popup) {
-    delete this.popup;
-    $(popup).fadeOut('fast', function() {$(popup).remove();});
+    this.popup = null;
+    $(popup).fadeOut('fast', function () { $(popup).remove(); });
   }
   this.selected = false;
-  this.selected2 = false;
+  $(this.ariaLive).empty();
 };
 
 /**
- * Positions the suggestions popup and starts a search
+ * Positions the suggestions popup and starts a search.
  */
-Drupal.settings.islandora_authority.jsAC.prototype.populatePopup = function () {
-  // Show popup
+Drupal.jsAC.prototype.populatePopup = function () {
+  var $input = $(this.input);
+  var position = $input.position();
+  // Show popup.
   if (this.popup) {
     $(this.popup).remove();
   }
   this.selected = false;
-  this.popup = document.createElement('div');
-  this.popup.id = 'islandora_authority_autocomplete';
+  this.popup = $('<div id="autocomplete"></div>')[0];
   this.popup.owner = this;
   $(this.popup).css({
-    marginTop: this.input.offsetHeight +'px',
-    width: (this.input.offsetWidth) +'px',
-    overflow: 'hidden'
+    top: parseInt(position.top + this.input.offsetHeight, 10) + 'px',
+    left: parseInt(position.left, 10) + 'px',
+    width: $input.innerWidth() + 'px',
+    display: 'none'
   });
-  $(this.input).before(this.popup);
+  $input.before(this.popup);
 
-  // Do search
+  // Do search.
   this.db.owner = this;
   this.db.search(this.input.value);
 };
 
-Drupal.settings.islandora_authority.jsAC.prototype.showSubmenu = function (node) {
-  // Show popup
-  if (this.popup2) {
-    $(this.popup2).hide();
-  }
-  this.selected2 = false;
-  if (typeof node.alt_popup != 'undefined') {
-    /*this.popup2 = document.createElement('div');
-    this.popup2.id = 'islandora_authority_submenu';
-    this.popup2.owner = this;
-
-    */
-
-    this.popup2 = node.alt_popup;
-    $(this.popup2)
-      .css({
-        marginLeft: (node.offsetWidth - 4) +'px',
-        width: (node.offsetWidth) +'px',
-        top: (node.offsetTop) + 'px'
-      })
-      .show();
-
-    //$(this.selected).before(this.popup2);
-  }
-};
-
 /**
- * Fills the suggestion popup with any matches received
+ * Fills the suggestion popup with any matches received.
  */
-Drupal.settings.islandora_authority.jsAC.prototype.found = function (matches) {
+Drupal.jsAC.prototype.found = function (matches) {
   // If no value in the textfield, do not show the popup.
-  if (!this.input.value.length || matches.length == 0) {
+  if (!this.input.value.length) {
     return false;
   }
 
-  // Prepare matches
-  var ul = document.createElement('ul');
-  $(ul).css({maxHeight: '180px', overflowX: 'scroll', overflowY: 'auto'});
+  // Prepare matches.
+  var ul = $('<ul></ul>');
   var ac = this;
-  for (var key in matches) {
-    var obj = matches[key];
-    var li = document.createElement('li');
-    $(li)
-      .html('<div>'+ obj['full-display'] +'</div>')
-      .click(function () {
-        ac.select(this);
-      })
-      .mouseenter(function () {
-        ac.highlight(this);
-      })
-      .mouseleave(function () {
-        ac.unhighlight(this);
-      }); //Gonna require some shenanigans to make it stay selected when using the mouse...
-
-    var alt_ul = document.createElement('ul');
-    var alts = obj['alts']
-    for (var prop in alts) {
-      if(typeof obj[prop] !== 'function') {
-        var alt_li = document.createElement('li');
-        //FIXME:  Something is broken with the mouse handling...  Never selects in the submenu?
-        $(alt_li)
-          .html('<div>'+ alts[prop]['full-display'] +'</div>')
-          .mouseenter(function () {
-            ac.highlightSub(this);
-          })
-          .mouseleave(function () {
-            ac.unhighlightSub(this);
-          })
-          .click(function (event) {
-            if (event.which == 1) {
-              ac.select(this);
-            }
-            event.stopPropagation();
-          });
-        alt_li.autocompleteSet = alts[prop];
-        $(alt_ul).append(alt_li).hide();
-      }
-    }
-
-    if (alt_ul.childNodes.length > 0) {
-      li.alt_popup = alt_ul;
-      $(li).append(alt_ul);
-    }
-
-    li.autocompleteSet = obj;
-    $(ul).append(li);
+  for (key in matches) {
+    $('<li></li>')
+      .html($('<div></div>').html(matches[key]))
+      .mousedown(function () { ac.select(this); })
+      .mouseover(function () { ac.highlight(this); })
+      .mouseout(function () { ac.unhighlight(this); })
+      .data('autocompleteValue', key)
+      .appendTo(ul);
   }
 
-  // Show popup with matches, if any
+  // Show popup with matches, if any.
   if (this.popup) {
-    if (ul.childNodes.length > 0) {
+    if (ul.children().length) {
       $(this.popup).empty().append(ul).show();
+      $(this.ariaLive).html(Drupal.t('Autocomplete popup'));
     }
     else {
-      $(this.popup).css({visibility: 'hidden'});
+      $(this.popup).css({ visibility: 'hidden' });
       this.hidePopup();
     }
   }
 };
 
-Drupal.settings.islandora_authority.jsAC.prototype.setStatus = function (status) {
+Drupal.jsAC.prototype.setStatus = function (status) {
   switch (status) {
     case 'begin':
       $(this.input).addClass('throbbing');
+      $(this.ariaLive).html(Drupal.t('Searching for matches...'));
       break;
     case 'cancel':
     case 'error':
@@ -427,42 +255,50 @@ Drupal.settings.islandora_authority.jsAC.prototype.setStatus = function (status)
 };
 
 /**
- * An AutoComplete DataBase object
+ * An AutoComplete DataBase object.
  */
-Drupal.settings.islandora_authority.ACDB = function (uri) {
+Drupal.ACDB = function (uri) {
   this.uri = uri;
   this.delay = 300;
   this.cache = {};
 };
 
 /**
- * Performs a cached and delayed search
+ * Performs a cached and delayed search.
  */
-Drupal.settings.islandora_authority.ACDB.prototype.search = function (searchString) {
+Drupal.ACDB.prototype.search = function (searchString) {
   var db = this;
   this.searchString = searchString;
 
-  // See if this key has been searched for before
+  // See if this string needs to be searched for anyway.
+  searchString = searchString.replace(/^\s+|\s+$/, '');
+  if (searchString.length <= 0 ||
+    searchString.charAt(searchString.length - 1) == ',') {
+    return;
+  }
+
+  // See if this key has been searched for before.
   if (this.cache[searchString]) {
     return this.owner.found(this.cache[searchString]);
   }
 
-  // Initiate delayed search
+  // Initiate delayed search.
   if (this.timer) {
     clearTimeout(this.timer);
   }
-  this.timer = setTimeout(function() {
+  this.timer = setTimeout(function () {
     db.owner.setStatus('begin');
 
-    // Ajax GET request for autocompletion
+    // Ajax GET request for autocompletion. We use Drupal.encodePath instead of
+    // encodeURIComponent to allow autocomplete search terms to contain slashes.
     $.ajax({
-      type: "GET",
-      url: db.uri +'/'+ Drupal.encodeURIComponent(searchString),
+      type: 'GET',
+      url: db.uri + '/' + Drupal.encodePath(searchString),
       dataType: 'json',
       success: function (matches) {
-        if (typeof matches['status'] == 'undefined' || matches['status'] != 0) {
+        if (typeof matches.status == 'undefined' || matches.status != 0) {
           db.cache[searchString] = matches;
-          // Verify if these are still the matches the user wants to see
+          // Verify if these are still the matches the user wants to see.
           if (db.searchString == searchString) {
             db.owner.found(matches);
           }
@@ -470,18 +306,19 @@ Drupal.settings.islandora_authority.ACDB.prototype.search = function (searchStri
         }
       },
       error: function (xmlhttp) {
-        alert(Drupal.ahahError(xmlhttp, db.uri));
+        alert(Drupal.ajaxError(xmlhttp, db.uri));
       }
     });
   }, this.delay);
 };
 
 /**
- * Cancels the current autocomplete request
+ * Cancels the current autocomplete request.
  */
-Drupal.settings.islandora_authority.ACDB.prototype.cancel = function() {
+Drupal.ACDB.prototype.cancel = function () {
   if (this.owner) this.owner.setStatus('cancel');
   if (this.timer) clearTimeout(this.timer);
   this.searchString = '';
 };
 
+})(jQuery);
