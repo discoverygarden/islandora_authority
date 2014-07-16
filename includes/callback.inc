@@ -76,7 +76,7 @@ function islandora_authority_get_fields(&$build_id, &$element_hash, &$form_state
     'fl' => array(),
     'fq' => explode('~', $element->user_data['islandora_authority_fq'])
   );
-  $element_types = islandora_authority_elements();
+  $element_types = module_invoke('islandora_authority', 'element_info');
   foreach ($parent->toArray() as $sibling) {
     if (is_array($sibling) && isset($sibling['#type']) && array_key_exists($sibling['#type'], $element_types)) {
       $toReturn['fields'][$sibling['#hash']] = array(

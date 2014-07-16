@@ -5,19 +5,19 @@
  * Theme implementations.
  */
 
-function islandora_authority_element_process($element, $edit, &$form_state) {
+function islandora_authority_element_process($element, &$form_state, $complete_form) {
   $element['#id'] = implode('--', array(
-    $form_state['#build_id'],
+    $complete_form['#build_id'],
     $element['#hash'],
   ));
   $form_state['cache'] = TRUE;
   return $element;
 }
 
-function islandora_authority_textfield_process($element, $edit, &$form_state) {
+function islandora_authority_textfield_process($element, &$form_state, $complete_form) {
   $element['#autocomplete_path'] = implode('/', array(
     $element['#autocomplete_path'],
-    $form_state['#build_id'],
+    $complete_form['#build_id'],
     $element['#hash'],
   ));
   return $element;
