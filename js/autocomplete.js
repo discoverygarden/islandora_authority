@@ -11,7 +11,7 @@ Drupal.behaviors.islandora_authority_autocomplete = {
       if (!acdb[uri]) {
         acdb[uri] = new Drupal.ACDB(uri);
       }
-      var $input = $('#' + this.id.substr(0, this.id.length - 33))
+      var $input = $('#' + this.id.substr(0, this.id.length - 34))
         .attr('autocomplete', 'OFF')
         .attr('aria-autocomplete', 'list');
       $($input[0].form).submit(Drupal.autocompleteSubmit);
@@ -30,6 +30,8 @@ Drupal.behaviors.islandora_authority_autocomplete = {
  */
 Drupal.islandora_authority_jsAC = Drupal.jsAC;
 
+var oldonkeydown = Drupal.islandora_authority_jsAC.prototype.onkeydown;
+
 /**
  * Handler for the "keydown" event.
  */
@@ -37,13 +39,8 @@ Drupal.islandora_authority_jsAC.prototype.onkeydown = function (input, e) {
   if (!e) {
     e = window.event;
   }
+
   switch (e.keyCode) {
-    case 40: // down arrow.
-      this.selectDown();
-      return false;
-    case 38: // up arrow.
-      this.selectUp();
-      return false;
     case 37:
       this.selectLeft();
       return false;
@@ -51,7 +48,7 @@ Drupal.islandora_authority_jsAC.prototype.onkeydown = function (input, e) {
       this.selectRight();
       return false;
     default: // All other keys.
-      return true;
+      return oldonkeydown.call(this, input, e);
   }
 };
 
@@ -76,9 +73,11 @@ Drupal.islandora_authority_jsAC.prototype.select = function (node) {
       $('#'+id_parts.join('--')).val(obj[prop]);
     }
   }
-  this.unhighlightSub(this.sub_selected);
+  this.sub_unhighlight(this.sub_selected);
   this.unhighlight(this.selected);
 };
+
+var oldselectdown = Drupal.islandora_authority_jsAC.prototype.selectDown;
 
 /**
  * Highlights the next suggestion.
@@ -93,16 +92,12 @@ Drupal.islandora_authority_jsAC.prototype.selectDown = function () {
       this.sub_highlight(lis.get(0));
     }
   }
-  else if (this.selected && this.selected.nextSibling) {
-    this.highlight(this.selected.nextSibling);
-  }
-  else if (this.popup) {
-    var lis = $('li', this.popup);
-    if (lis.length > 0) {
-      this.highlight(lis.get(0));
-    }
+  else {
+    oldselectdown.call(this)
   }
 };
+
+var oldselectup = Drupal.islandora_authority_jsAC.prototype.selectUp;
 
 /**
  * Highlights the previous suggestion.
@@ -111,16 +106,37 @@ Drupal.islandora_authority_jsAC.prototype.selectUp = function () {
   if (this.sub_selected && this.sub_selected.previousSibling) {
     this.sub_highlight(this.sub_selected.previousSibling);
   }
-  else if (this.selected && this.selected.previousSibling) {
-    this.highlight(this.selected.previousSibling);
+  else {
+    oldselectup.call(this)
   }
 };
+
+Drupal.islandora_authority_jsAC.prototype.selectRight = function () {
+  if (this.sub_selected) {
+    this.hidePopup(false);
+  }
+  else if (this.selected) {
+    this.showSubmenu(this.selected);
+    if (typeof this.sub_popup != 'undefined') {
+      this.sub_highlight(this.sub_popup.firstChild);
+    }
+  }
+};
+
+Drupal.islandora_authority_jsAC.prototype.selectLeft = function () {
+  if (this.sub_selected) {
+    this.sub_unhighlight(this.sub_selected);
+    this.highlight(this.selected);
+  }
+};
+
+var oldhighlight = Drupal.islandora_authority_jsAC.prototype.highlight;
 
 /**
  * Highlights a suggestion.
  */
 Drupal.islandora_authority_jsAC.prototype.highlight = function (node) {
-  Drupal.jsAC.highlight.call(this, node);
+  oldhighlight.call(this, node);
   this.showSubmenu(this.selected);
 };
 Drupal.islandora_authority_jsAC.prototype.sub_highlight = function (node) {
@@ -172,32 +188,6 @@ Drupal.islandora_authority_jsAC.prototype.hidePopup = function (keycode) {
   $(this.ariaLive).empty();
 };
 
-/**
- * Positions the suggestions popup and starts a search.
- */
-Drupal.islandora_authority_jsAC.prototype.populatePopup = function () {
-  var $input = $(this.input);
-  var position = $input.position();
-  // Show popup.
-  if (this.popup) {
-    $(this.popup).remove();
-  }
-  this.selected = false;
-  this.popup = $('<div id="islandora-authority-autocomplete"></div>')[0];
-  this.popup.owner = this;
-  $(this.popup).css({
-    top: parseInt(position.top + this.input.offsetHeight, 10) + 'px',
-    left: parseInt(position.left, 10) + 'px',
-    width: $input.innerWidth() + 'px',
-    display: 'none'
-  });
-  $input.before(this.popup);
-
-  // Do search.
-  this.db.owner = this;
-  this.db.search(this.input.value);
-};
-
 Drupal.islandora_authority_jsAC.prototype.showSubmenu = function (node) {
   // Show popup
   if (this.sub_popup) {
@@ -228,7 +218,7 @@ Drupal.islandora_authority_jsAC.prototype.found = function (matches) {
   // Prepare matches.
   var ul = $('<ul></ul>');
   var ac = this;
-  for (key in matches) {
+  for (var key in matches) {
     var li = $('<li></li>')
       .html($('<div></div>').html(matches[key]['full-display']))
       .mousedown(function () { ac.select(this); })
@@ -237,14 +227,14 @@ Drupal.islandora_authority_jsAC.prototype.found = function (matches) {
       .data('autocompleteSet', matches[key])
       .appendTo(ul);
     var alt_ul = $('<ul></ul>');
-    for (var prop in obj['alts']) {
+    for (var prop in matches[key]['alts']) {
       $('<li></li>')
         .html($('<div></div>').html(matches[key]['alts'][prop]['full-display']))
-        .mousedown(function (event) {
-          if (event.which == 1) {
+        .mousedown(function (evt) {
+          if (evt.which == 1) {
             ac.select(this);
           }
-          event.stopPropagation();
+          evt.stopPropagation();
         })
         .mouseover(function () { ac.sub_highlight(this); })
         .mouseout(function () { ac.sub_unhighlight(this); })
@@ -252,7 +242,7 @@ Drupal.islandora_authority_jsAC.prototype.found = function (matches) {
         .appendTo(alt_ul)
         .hide();
     }
-    if (alt_ul.childNodes.length > 0) {
+    if (alt_ul.children().length > 0) {
       li.alt_popup = alt_ul;
       $(li).append(alt_ul);
     }

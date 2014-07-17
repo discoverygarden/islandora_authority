@@ -5,24 +5,6 @@
  * Theme implementations.
  */
 
-function islandora_authority_element_process($element, &$form_state, $complete_form) {
-  $element['#id'] = implode('--', array(
-    $complete_form['#build_id'],
-    $element['#hash'],
-  ));
-  $form_state['cache'] = TRUE;
-  return $element;
-}
-
-function islandora_authority_textfield_process($element, &$form_state, $complete_form) {
-  $element['#autocomplete_path'] = implode('/', array(
-    $element['#autocomplete_path'],
-    $complete_form['#build_id'],
-    $element['#hash'],
-  ));
-  return $element;
-}
-
 /**
  * Theme implementation for custom textfield...  Only difference from 'regular'
  *  textfield is the use of the 'islandora_authority_id' instead of the 'real' id
@@ -37,11 +19,11 @@ function theme_islandora_authority_textfield($variables) {
 
   $extra = '';
   if ($element['#autocomplete_path'] && drupal_valid_path($element['#autocomplete_path'])) {
-    $element['#attributes']['class'][] = 'form-islandora-authority-autocomplete';
+    $element['#attributes']['class'][] = 'form-autocomplete';
 
     $attributes = array();
     $attributes['type'] = 'hidden';
-    $attributes['id'] = $element['#attributes']['id'] . '-islandora-authority-autocomplete';
+    $attributes['id'] = $element['#attributes']['id'] . '--islandora-authority-autocomplete';
     $attributes['value'] = url($element['#autocomplete_path'], array('absolute' => TRUE));
     $attributes['disabled'] = 'disabled';
     $attributes['class'][] = 'islandora-authority-autocomplete';

@@ -28,9 +28,6 @@ function islandora_authority_element_info() {
         //"$mod_path/js/jquery.scrollTo-1.4.3-min.js",
         "$mod_path/js/autocomplete.js",
       ),
-      'css' => array(
-        "$mod_path/css/autocomplete.css",
-      ),
     ),
   );
   $elements['islandora_authority_hidden'] = array(
@@ -76,5 +73,23 @@ function islandora_authority_theme() {
   );
 
   return $items;
+}
+
+function islandora_authority_element_process($element, &$form_state, $complete_form) {
+  $element['#id'] = implode('--', array(
+    $complete_form['#build_id'],
+    $element['#hash'],
+  ));
+  $form_state['cache'] = TRUE;
+  return $element;
+}
+
+function islandora_authority_textfield_process($element, &$form_state, $complete_form) {
+  $element['#autocomplete_path'] = implode('/', array(
+    $element['#autocomplete_path'],
+    $complete_form['#build_id'],
+    $element['#hash'],
+  ));
+  return $element;
 }
 
