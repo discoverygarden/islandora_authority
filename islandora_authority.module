@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * General hook implementations.
+ */
+
+/**
  * Implements hook_element_info().
  */
 function islandora_authority_element_info() {
@@ -25,7 +30,6 @@ function islandora_authority_element_info() {
         array('system', 'drupal.autocomplete'),
       ),
       'js' => array(
-        //"$mod_path/js/jquery.scrollTo-1.4.3-min.js",
         "$mod_path/js/autocomplete.js",
       ),
     ),
@@ -75,6 +79,12 @@ function islandora_authority_theme() {
   return $items;
 }
 
+/**
+ * Process callback for islandora_authority elements.
+ *
+ * XXX: Would be in theme/theme.inc, but it doesn't appear to be loaded
+ * reliably?
+ */
 function islandora_authority_element_process($element, &$form_state, $complete_form) {
   $element['#id'] = implode('--', array(
     $complete_form['#build_id'],
@@ -84,6 +94,12 @@ function islandora_authority_element_process($element, &$form_state, $complete_f
   return $element;
 }
 
+/**
+ * Process callback for islandora_authority_textfield.
+ *
+ * XXX: Would be in theme/theme.inc, but it doesn't appear to be loaded
+ * reliably?
+ */
 function islandora_authority_textfield_process($element, &$form_state, $complete_form) {
   $element['#autocomplete_path'] = implode('/', array(
     $element['#autocomplete_path'],
@@ -92,4 +108,3 @@ function islandora_authority_textfield_process($element, &$form_state, $complete
   ));
   return $element;
 }
-

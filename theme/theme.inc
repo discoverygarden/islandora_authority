@@ -6,15 +6,24 @@
  */
 
 /**
- * Theme implementation for custom textfield...  Only difference from 'regular'
- *  textfield is the use of the 'islandora_authority_id' instead of the 'real' id
- * @param array $element 'preprocessed' element definition.
- * @return string Containing the markup for the given element
+ * Theme implementation for custom textfield.
+ *
+ * Copy/pasta from Drupal core, diverging only when specifying the class and ID
+ * of the hidden autocomplete element.
+ * ... And code formatting, to find our standards.
+ *
+ * @see theme_textfield()
  */
 function theme_islandora_authority_textfield($variables) {
   $element = $variables['element'];
   $element['#attributes']['type'] = 'text';
-  element_set_attributes($element, array('id', 'name', 'value', 'size', 'maxlength'));
+  element_set_attributes($element, array(
+    'id',
+    'name',
+    'value',
+    'size',
+    'maxlength',
+  ));
   _form_set_class($element, array('form-text'));
 
   $extra = '';

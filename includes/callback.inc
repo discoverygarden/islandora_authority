@@ -1,8 +1,38 @@
 <?php
 
-function _build_match($solr_doc, $field_info) {
-  $map = array(); //fieldname => !variable_name
-  $mapped = array(); //!variable_name => field value
+/**
+ * @file
+ * Autocomplete callback and friends.
+ */
+
+/**
+ * Build the structure expected client-side.
+ *
+ * @param array $solr_doc
+ *   An associative array mapping field names to either strings or arrays.
+ * @param array $field_info
+ *   An associative array as returned by islandora_authority_get_fields().
+ *
+ * @return array
+ *   An associative array containing:
+ *   - full-display: A string to display
+ *   - alts: An indexed array of "alternative" entries, each containing:
+ *     - full-display: A string to display
+ *     And additional keys representing element hashes mapped to values the
+ *     relevant elements should recieve.
+ *   And additional keys representing element hashes mapped to values the
+ *   relevant elements should recieve.
+ *
+ * @todo Make the structure of things returned here a little more sane.
+ */
+function islandora_authority_build_match($solr_doc, $field_info) {
+  // An associative array mapping Solr field names to format_string()
+  // placeholders.
+  $map = array();
+  // An associative array mapping format_string() placeholders to the values
+  // each should recieve.
+  $mapped = array();
+
   $fields = array();
   $keys = array();
 
@@ -15,78 +45,76 @@ function _build_match($solr_doc, $field_info) {
     $fields[] = (array) $solr_doc[$field['display_field_name']];
   }
 
-  $toReturn = array('alts' => array());
+  $to_return = array('alts' => array());
   $zipped = call_user_func_array('array_map', array_merge(array(NULL), $fields));
 
   foreach ($zipped as $index => &$value) {
-    $toMerge = array();
+    $to_merge = array();
     foreach (array_combine($keys, $value) as $hash => $content) {
       if (isset($map[$hash])) {
         $mapped[$map[$hash]] = $content;
       }
-      $toMerge[$hash] = $content;
+      $to_merge[$hash] = $content;
     }
 
-    $toMerge['full-display'] = format_string($field_info['pattern'], $mapped);
+    $to_merge['full-display'] = format_string($field_info['pattern'], $mapped);
 
     if ($index == 0) {
-      $toReturn = array_merge($toReturn, $toMerge);
+      $to_return = array_merge($to_return, $to_merge);
     }
     else {
-      $toReturn['alts'][$index - 1] = $toMerge;
+      $to_return['alts'][$index - 1] = $to_merge;
     }
   }
-  return $toReturn;
+  return $to_return;
 }
 
 /**
+ * Get info for associated fields.
  *
- * @param type $build_id
- * @param type $element
- * @param type $form_state
- * @return array (
- *  'pattern' => as used in t function,
- *  'current' => hash of the current element,
- *  'fields' => array(
- *    array(
- *      'field_name' => name_as_in_solr,
- *      'mapping' => as in the t pattern above.
- *    )
- *    ...
- *  )
- * )
+ * @param string $build_id
+ *   Build ID of the form, so we can grab the form from cache to be able to
+ *   relate back to form elements on the client side.
+ * @param string $element_hash
+ *   The element in which the user is currently autocompleting.
+ *
+ * @return array
+ *   - pattern: A string to use as the first parameter of "format_string", as a
+ *     template of what will be shown to users.
+ *   - current: A string containing the hash of the current element.
+ *   - fields: An array of associative arrays, each containing:
+ *     - field_name: A string containing the Solr field name
+ *     - mapping: A string containing a placeholder in the "pattern" above.
  */
-function islandora_authority_get_fields($build_id, $element_hash, $form_state = NULL) {
-  if ($form_state === NULL) {
-    $form_state = array('storage' => NULL, 'submitted' => FALSE, 'post' => array());
-  }
+function islandora_authority_get_fields($build_id, $element_hash) {
+  $form_state = form_state_defaults();
   $form = form_get_cache($build_id, $form_state);
   module_load_include('inc', 'objective_forms', 'Form');
-  //FIXME (minor):  If this could be cached somewhere, it would be great.
   $obj_form = new Form($form, $form_state);
   $element = $obj_form->findElement($element_hash);
   $parent = $element->parent;
-  $toReturn = array(
+  $to_return = array(
     'pattern' => $parent->user_data['islandora_authority_t_pattern'],
     'current' => $element_hash,
     'fl' => array(),
     'fq' => (isset($element->user_data['islandora_authority_fq']) ?
       explode('~', $element->user_data['islandora_authority_fq']) :
       array()),
+    'fields' => array(),
   );
   $element_types = module_invoke('islandora_authority', 'element_info');
   foreach ($parent->toArray() as $sibling) {
     if (is_array($sibling) && isset($sibling['#type']) && array_key_exists($sibling['#type'], $element_types)) {
-      $toReturn['fields'][$sibling['#hash']] = array(
+      $to_return['fields'][$sibling['#hash']] = array(
         'search_field_name' => $sibling['#user_data']['islandora_authority_solr_search_field'],
         'display_field_name' => (!empty($sibling['#user_data']['islandora_authority_solr_display_field']) ?
-            $sibling['#user_data']['islandora_authority_solr_display_field'] :
-            $sibling['#user_data']['islandora_authority_solr_search_field']),
+          $sibling['#user_data']['islandora_authority_solr_display_field'] :
+          $sibling['#user_data']['islandora_authority_solr_search_field']),
         'mapping' => $sibling['#user_data']['islandora_authority_mapping']);
-      $toReturn['fl'][] = $toReturn['fields'][$sibling['#hash']]['display_field_name'];
+      $to_return['fl'][] = $to_return['fields'][$sibling['#hash']]['display_field_name'];
     }
   }
-  return $toReturn;
+  return $to_return;
 }
 
 /**
@@ -104,7 +132,7 @@ function islandora_authority_autocomplete($build_id, $element, $string = '') {
   $matches = array();
   foreach ($qp->islandoraSolrResult['response']['objects'] as $object) {
     $doc = $object['solr_doc'];
-    $matches[$doc['PID']] = _build_match($doc, $fields);
+    $matches[$doc['PID']] = islandora_authority_build_match($doc, $fields);
   }
   drupal_json_output($matches);
 }
