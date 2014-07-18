@@ -20,7 +20,7 @@ before_install:
   - ln -s $TRAVIS_BUILD_DIR sites/all/modules/islandora_authority
   - ln -s $HOME/islandora_solr_search sites/all/modules/islandora_solr_search
   - ln -s $HOME/objective_forms sites/all/modules/objective_forms
-  - drush en --user=1 --yes islandora islandora_solr_search objective_forms
+  - drush en --user=1 --yes islandora islandora_solr objective_forms
 script:
   - ant -buildfile sites/all/modules/islandora_solution_pack_manuscript/build.xml lint
   - $ISLANDORA_DIR/tests/scripts/line_endings.sh sites/all/modules/islandora_authority
