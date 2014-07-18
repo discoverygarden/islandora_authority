@@ -1,0 +1,20 @@
+/**
+ * @file
+ * Alternate handling to allow listing of secondary options.
+ */
+.form-type-islandora-authority-textfield #autocomplete {
+  overflow: visible;
+  border: none;
+}
+
+.form-type-islandora-authority-textfield #autocomplete ul {
+  border: #000000 1px solid;
+}
+
+.form-type-islandora-authority-textfield #autocomplete ul ul {
+  position: absolute;
+}
+
+.form-type-islandora-authority-textfield #autocomplete div {
+  overflow: hidden;
+}
