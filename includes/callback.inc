@@ -63,7 +63,7 @@ function islandora_authority_build_match($solr_doc, $field_info) {
       $to_return = array_merge($to_return, $to_merge);
     }
     else {
-      $to_return['alts'][$index - 1] = $to_merge;
+      $to_return['alts'][] = $to_merge;
     }
   }
   return $to_return;

@@ -32,6 +32,9 @@ function islandora_authority_element_info() {
       'js' => array(
         "$mod_path/js/autocomplete.js",
       ),
+      'css' => array(
+        "$mod_path/css/autocomplete.css",
+      ),
     ),
   );
   $elements['islandora_authority_hidden'] = array(
