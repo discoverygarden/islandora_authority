@@ -38,7 +38,7 @@ function islandora_authority_element_info() {
     ),
   );
   $elements['islandora_authority_hidden'] = array(
-    '#theme' => 'islandora_authority_hidden',
+    '#theme' => 'hidden',
     '#input' => TRUE,
     '#process' => array(
       'islandora_authority_element_process',
@@ -74,10 +74,6 @@ function islandora_authority_theme() {
     'render element' => 'element',
     'file' => 'theme/theme.inc',
   );
-  $items['islandora_authority_hidden'] = array(
-    'render element' => 'element',
-    'file' => 'theme/theme.inc',
-  );
 
   return $items;
 }
@@ -89,7 +85,7 @@ function islandora_authority_theme() {
  * reliably?
  */
 function islandora_authority_element_process($element, &$form_state, $complete_form) {
-  $element['#id'] = implode('--', array(
+  $element['#attributes']['id'] = implode('--', array(
     $complete_form['#build_id'],
     $element['#hash'],
   ));
