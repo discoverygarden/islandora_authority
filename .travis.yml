@@ -14,13 +14,15 @@ before_install:
   - git clone -b 7.x git://github.com/Islandora/islandora.git
   - git clone -b 7.x git://github.com/Islandora/islandora_solr_search.git
   - git clone -b 7.x git://github.com/Islandora/objective_forms.git
+  - git clone -b 7.x git://github.com/Islandora/php_lib.git
   - export ISLANDORA_DIR=$HOME/islandora
   - $HOME/islandora/tests/scripts/travis_setup.sh
   - cd $HOME/drupal-*
   - ln -s $TRAVIS_BUILD_DIR sites/all/modules/islandora_authority
   - ln -s $HOME/islandora_solr_search sites/all/modules/islandora_solr_search
   - ln -s $HOME/objective_forms sites/all/modules/objective_forms
-  - drush en --user=1 --yes islandora islandora_solr objective_forms
+  - ln -s $HOME/php_lib sites/all/modules/php_lib
+  - drush en --user=1 --yes islandora_authority
 script:
   - ant -buildfile sites/all/modules/islandora_solution_pack_manuscript/build.xml lint
   - $ISLANDORA_DIR/tests/scripts/line_endings.sh sites/all/modules/islandora_authority
