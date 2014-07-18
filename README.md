@@ -1,18 +1,19 @@
-# Islandora Example Module [![Build Status](https://travis-ci.org/Islandora/islandora_example_module.png?branch=7.x)](https://travis-ci.org/Islandora/islandora_example_module)
+# Islandora Authority Module [![Build Status](https://travis-ci.org/discoverygarden/islandora_authority.png?branch=7.x)](https://travis-ci.org/Islandora/islandora_authority)
 
 ## Introduction
 
-A brief introduction and summary of the module.
+This module adds two Drupal form API elements and a menu path used for autocompletion used for autocompletion on one of them. These two new elements are:
+* `islandora_authority_textfield`: A textfield which can autocomplete on a Solr field.
+* `islandora_authority_hidden`: A hidden element which can be autocompleted, as a result of a search.
+
+One caveat: Due to how we perform lookups, forms in which these elements _must_ pass through Objective Forms to recieve `#hash` values.
 
 ## Requirements
 
 This module requires the following modules/libraries:
 
-* [Islandora](https://github.com/islandora/islandora)
-* [Tuque](https://github.com/islandora/tuque)
-* Any
-* Additional
-* Requirements
+* [Islandora Solr](https://github.com/Islandora/islandora_solr)
+* [Objective Forms](https://github.com/Islandora/objective_forms)
 
 ## Installation
 
@@ -20,9 +21,16 @@ Install as usual, see [this](https://drupal.org/documentation/install/modules-th
 
 ## Configuration
 
-Set the paths for `example` and `module` in Administration » Islandora » MODULE (admin/islandora/module).
+Our configuration is stored in `#user_data` on our `islandora_authority_textfield` and `islandora_authority_hidden` elements.
 
-Include a screenshot of configuration page.
+Generally, multiple `islandora_authority` elements are direct children of a common parent. The parent currently has two parameters:
+* `islandora_authority_t_pattern`:  A pattern as used by Drupal's `format_string()`/`t()` function.
+* `islandora_authority_fq`: A list of tilde-separated Lucene statements, e.g.: `PID:ir*`, to ensure all results come from the IR namespace. (Note: separating is done via a naive explode; tildes in values break it)
+
+Each contained authority element specifies:
+* `islandora_authority_solr_search_field`: A EdgeNGram'd Solr field.
+* `islandora_authority_solr_display_field`: An optional Solr field, used for display purposes (defaults to the search field).
+* `islandora_authority_mapping`: An optional placeholder, which will make values for this field available for substitution into the `t_pattern` above.
 
 ## Troubleshooting/Issues
 
@@ -31,29 +39,17 @@ Having problems or solved a problem? Check out the Islandora google groups for a
 * [Islandora Group](https://groups.google.com/forum/?hl=en&fromgroups#!forum/islandora)
 * [Islandora Dev Group](https://groups.google.com/forum/?hl=en&fromgroups#!forum/islandora-dev)
 
-## FAQ
-
-Q. Is this normal?
-
-A. Yes. This is normal. Why ...
-
 ## Maintainers/Sponsors
 
 Current maintainers:
 
-* [Maintainer Name](https://github.com/maintainer_github)
-* [Another Maintainer](https://github.com/maintainer_github)
-
-This project has been sponsored by:
-
-* Some really awesome sponsor
-A description of this really awesome sponsor
+* [discoverygarden Inc.](https://github.com/discoverygarden)
 
 ## Development
 
 If you would like to contribute to this module, please check out our helpful [Documentation for Developers](https://github.com/Islandora/islandora/wiki#wiki-documentation-for-developers) info, as well as our [Developers](http://islandora.ca/developers) section on the Islandora.ca site.
 
-Also include any Travis gotcha's here. 
+Also include any Travis gotcha's here.
 
 ## License
 

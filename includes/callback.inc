@@ -97,8 +97,8 @@ function islandora_authority_get_fields($build_id, $element_hash) {
     'pattern' => $parent->user_data['islandora_authority_t_pattern'],
     'current' => $element_hash,
     'fl' => array(),
-    'fq' => (isset($element->user_data['islandora_authority_fq']) ?
-      explode('~', $element->user_data['islandora_authority_fq']) :
+    'fq' => (isset($parent->user_data['islandora_authority_fq']) ?
+      explode('~', $parent->user_data['islandora_authority_fq']) :
       array()),
     'fields' => array(),
   );
