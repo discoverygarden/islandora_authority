@@ -1,4 +1,4 @@
-# Islandora Authority Module [![Build Status](https://travis-ci.org/discoverygarden/islandora_authority.png?branch=7.x)](https://travis-ci.org/Islandora/islandora_authority)
+# Islandora Authority Module [![Build Status](https://travis-ci.org/discoverygarden/islandora_authority.png?branch=7.x)](https://travis-ci.org/discoverygarden/islandora_authority)
 
 ## Introduction
 

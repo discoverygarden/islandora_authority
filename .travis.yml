@@ -2,6 +2,7 @@ language: php
 php:
   - 5.3.3
   - 5.4
+  - 5.5
 branches:
   only:
     - /^7\.x.*/
@@ -28,4 +29,4 @@ script:
   - $ISLANDORA_DIR/tests/scripts/line_endings.sh sites/all/modules/islandora_authority
   - drush coder-review --reviews=production,security,style,i18n,potx,sniffer islandora_authority
   - phpcpd --names *.module,*.inc,*.test sites/all/modules/islandora_authority
-#  - drush test-run --user=1 --uri=http://localhost:8081 "Islandora Manuscript"
+#  - drush test-run --user=1 --uri=http://localhost:8081 "Islandora Authority"
