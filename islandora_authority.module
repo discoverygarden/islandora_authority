@@ -1,401 +1,92 @@
 <?php
 
 /**
- * Similar to Python's zip function, which takes a number of sequences (arrays),
- *  and produces a single sequence of sequences (tuples)...
- * One difference:  Strings before an array in the list of parameters will be
- *  used as the key for elements from that array; otherwise, array elements will
- *  be in the order the arrays are passed in.
- * Justification: There doesn't really seem to be a nice way to iterate over
- *  multiple arrays at the same time, except through the use of indicies.
- *
- * Usage: _zip(string1, array1, string2, array2, string3, array3) returns
- *        array(
- *          [0] => array(
- *           string1 => array1[0],
- *            string2 => array2[0],
- *           string3 => array3[0]
- *          ),
- *          [1] => array(
- *            string1 => array1[1],
- *            string2 => array2[1],
- *            string3 => array3[1]
- *          ),
- *        )
- *   OR (similarly; equivalent to array_map(null, arrays...)
- *        _zip(array1, array2, array3) returns...  This duplicated array_map
- *        array(
- *          [0] => array(
- *            [0] => array1[0],
- *            [1] => array2[0],
- *            [2] => array3[0]
- *          ),
- *          [1] => array(
- *            [0] => array1[1],
- *            [1] => array2[1],
- *            [2] => array3[1]
- *          ),
- *        )
- *
- * @return array
+ * @file
+ * General hook implementations.
  */
-function _zip() {
-  $args = func_get_args();
-  $arrayToReturn = array();
-  $arraysToZip = array();
-  $lengths = array();
-  $key = NULL;
-  $hasKey = FALSE;
-  foreach ($args as &$arg) {
-    if (is_array($arg)) {
-      if (!empty($key)) {
-        $arraysToZip[$key] = $arg;
-      }
-      else {
-        $arraysToZip[] = $arg;
-      }
-      $lengths[] = count($arg);
-      $key = NULL;
-    }
-    elseif (is_string($arg)) {
-      $key = $arg;
-      $hasKey = TRUE;
-    }
-  }
-  //dd($args);
-  //dd($arraysToZip);
-  if ($hasKey) {
-    for ($i = 0; $i < min($lengths); $i++) {
-      $tuple = array();
-      foreach ($arraysToZip as $key => &$toZip) {
-        $tuple[$key] = & $toZip[$i];
-      }
-      $arrayToReturn[] = $tuple;
-    }
-  }
-  else {
-    array_unshift($args, NULL);
-    $arrayToReturn = call_user_func_array('array_map', $args);
-  }
-
-  return $arrayToReturn;
-}
 
 /**
- * Implementation of hook_elements().
- * @return array element definitions
+ * Implements hook_element_info().
  */
-function islandora_authority_elements() {
-  return array(
-    /* Not needed, because we use parent elements...  Was used to expand as
-     * 'options' does... Essentially making a parent.  Causes trouble in Form
-     * Builder, though (how to specify a path on something it doesn't know
-     * about)
-      'authorityelement' => array(
-      '#input' => TRUE,
-      '#process' => array('islandora_authority_element_expansion'),
-      '#attributes' => array(''),
-      '#autocomplete_path' => 'islandora/authority',
-      '#subfields' => array(
-      'eaccpf_name_forename_et' => array(
-      //'#fieldname' => 'eaccpf_name_forename_et',
-      '#input' => TRUE,
-      '#type' => 'authoritytextfield',
-      '#title' => 'Forename'
-      ),
-      'eaccpf_name_surname_et' => array(
-      //'#fieldname' => 'eaccpf_name_surname_et',
-      '#input' => TRUE,
-      '#type' => 'authoritytextfield',
-      '#title' => 'Surname'
-      ),
-      'PID' => array(
-      '#input' => TRUE,
-      '#type' => 'hidden'
-      )
-      )
-      ), */
-    'islandora_authority_textfield' => array(
-      '#input' => TRUE,
-      '#size' => 60,
-      '#maxlength' => 128,
-      '#autocomplete_path' => 'islandora/authority',
-      '#process' => array(
-        'form_expand_ahah',
-        'islandora_authority_textfield_process',
-        'islandora_authority_element_process')
+function islandora_authority_element_info() {
+  $elements = array();
+
+  $mod_path = drupal_get_path('module', 'islandora_authority');
+
+  $elements['islandora_authority_textfield'] = array(
+    '#theme' => 'islandora_authority_textfield',
+    '#theme_wrappers' => array('form_element'),
+    '#input' => TRUE,
+    '#size' => 60,
+    '#maxlength' => 128,
+    '#autocomplete_path' => 'islandora/authority',
+    '#process' => array(
+      'ajax_process_form',
+      'islandora_authority_load_theme_file',
+      'islandora_authority_textfield_process',
+      'islandora_authority_element_process',
     ),
-    'islandora_authority_hidden' => array(
-      '#input' => TRUE,
-      '#process' => array(
-        'islandora_authority_element_process')
-    )
+    '#attached' => array(
+      'library' => array(
+        array('system', 'drupal.autocomplete'),
+      ),
+      'js' => array(
+        "$mod_path/js/autocomplete.js",
+      ),
+      'css' => array(
+        "$mod_path/css/autocomplete.css",
+      ),
+    ),
   );
+  $elements['islandora_authority_hidden'] = array(
+    '#theme' => 'hidden',
+    '#input' => TRUE,
+    '#process' => array(
+      'islandora_authority_load_theme_file',
+      'islandora_authority_element_process',
+    ),
+  );
+
+  return $elements;
 }
 
+/**
+ * Implements hook_menu().
+ */
 function islandora_authority_menu() {
-  return array(
-    'islandora/authority' => array(
-      'page callback' => 'islandora_authority_autocomplete',
-      'access callback' => TRUE,
-      'type' => MENU_CALLBACK,
-    )
+  $items = array();
+
+  $items['islandora/authority'] = array(
+    'page callback' => 'islandora_authority_autocomplete',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+    'file' => 'includes/callback.inc',
   );
-}
 
-//FIXME (minor): Doesn't really need $results if it's not doing hightlighting...  Anyway.
-function _build_match(&$results, &$solr_doc, &$field_info) {
-  $map = array(); //fieldname => !variable_name
-  $mapped = array(); //!variable_name => field value
-  $fields = array();
-  $keys = array();
-
-  foreach ($field_info['fields'] as $hash => &$field) {
-    if (isset($field['mapping'])) {
-      $map[$hash] = $field['mapping'];
-    }
-
-    $keys[] = $hash;
-    $fields[] = (array) ($solr_doc->{$field['display_field_name']});
-  }
-
-  $toReturn = array('alts' => array());
-  $zipped = call_user_func_array('_zip', $fields);
-
-  foreach ($zipped as $index => &$value) {
-    $toMerge = array();
-    foreach (array_combine($keys, $value) as $hash => $content) {
-      if (isset($map[$hash])) {
-        $mapped[$map[$hash]] = $content;
-      }
-      $toMerge[$hash] = $content;
-    }
-
-    /* Something of an abuse of t()...  Should be changed to format_string for
-     * Drupal 7 (as the templatey stuff is what we really want to do...)
-     */
-    $toMerge['full-display'] = t($field_info['pattern'], $mapped);
-
-    if ($index == 0) {
-      $toReturn = array_merge($toReturn, $toMerge);
-    }
-    else {
-      $toReturn['alts'][$index - 1] = $toMerge;
-    }
-  }
-  if (empty($toReturn['alts'])) {
-    unset($toReturn['alts']);
-  }
-  return $toReturn;
+  return $items;
 }
 
 /**
- *
- * @param type $build_id
- * @param type $element
- * @param type $form_state
- * @return array (
- *  'pattern' => as used in t function,
- *  'current' => hash of the current element,
- *  'fields' => array(
- *    array(
- *      'field_name' => name_as_in_solr,
- *      'mapping' => as in the t pattern above.
- *    )
- *    ...
- *  )
- * )
+ * Implements hook_theme().
  */
-function islandora_authority_get_fields(&$build_id, &$element_hash, &$form_state = array('storage' => NULL, 'submitted' => FALSE, 'post' => array())) {
-  $form = form_get_cache($build_id, $form_state);
-  module_load_include('inc', 'objective_forms', 'Form');
-  //FIXME (minor):  If this could be cached somewhere, it would be great.
-  $obj_form = new Form($form, $form_state);
-  $element = $obj_form->findElement($element_hash);
-  $parent = $element->parent;
-  $toReturn = array(
-    'pattern' => $parent->user_data['islandora_authority_t_pattern'],
-    'current' => $element_hash,
-    'fl' => array(),
-    'fq' => explode('~', $element->user_data['islandora_authority_fq'])
-  );
-  $element_types = islandora_authority_elements();
-  foreach ($parent->toArray() as $sibling) {
-    if (is_array($sibling) && isset($sibling['#type']) && array_key_exists($sibling['#type'], $element_types)) {
-      $toReturn['fields'][$sibling['#hash']] = array(
-        'search_field_name' => $sibling['#user_data']['islandora_authority_solr_search_field'],
-        'display_field_name' => (!empty($sibling['#user_data']['islandora_authority_solr_display_field']) ?
-            $sibling['#user_data']['islandora_authority_solr_display_field'] :
-            $sibling['#user_data']['islandora_authority_solr_search_field']),
-        'mapping' => $sibling['#user_data']['islandora_authority_mapping']);
-      $toReturn['fl'][] = & $toReturn['fields'][$sibling['#hash']]['display_field_name'];
-    }
-  }
-  return $toReturn;
-}
-
-//Need to take which field to highlight as a parameter
-function islandora_authority_autocomplete($build_id, $element, $string = '') {
-  module_load_include('php', 'islandora_solr_search', 'SolrPhpClient/Apache/Solr/Service');
-  $solr_url = variable_get('islandora_solr_search_block_url', 'http://localhost:8080/solr/');
-  $path_parts = parse_url($solr_url);
-  $solr = new Apache_Solr_Service($path_parts['host'], $path_parts['port'], $path_parts['path']);
-  $solr->setCreateDocuments(FALSE);
-  $matches = array();
-  // FIXME (minor): If this could be cached at some level, it would be great...
-  $fields = islandora_authority_get_fields($build_id, $element);
-  $results = $solr->search($string, 0, 1000, array(
-    'qf' => $fields['fields'][$element]['search_field_name'],
-    'fl' => implode(',', (array) $fields['fl']),
-    'fq' => implode(' ', $fields['fq']),
-    'defType' => 'dismax')
-  );
-  $matches = array();
-  if (isset($results)) {
-    foreach ($results->response->docs as &$doc) {
-      $matches[$doc->PID] = _build_match($results, $doc, $fields);
-    }
-  }
-  print drupal_json($matches);
-  exit();
-}
-
-/*
- * Exactly the same as drupal form_clean_id, EXCEPT we don't wipe out underscores...
-
-  function islandora_authority_clean_form_id($id, $flush = FALSE) {
-  static $seen_ids = array();
-
-  if ($flush) {
-  $seen_ids = array();
-  form_clean_id($id, $flush);
-  return;
-  }
-
-  if (strpos($id, '_') !== FALSE) {
-  return form_clean_id($id);
-  }
-  $id = str_replace(array('][', ' '), '-', $id);
-
-  // Ensure IDs are unique. The first occurrence is held but left alone.
-  // Subsequent occurrences get a number appended to them. This incrementing
-  // will almost certainly break code that relies on explicit HTML IDs in
-  // forms that appear more than once on the page, but the alternative is
-  // outputting duplicate IDs, which would break JS code and XHTML
-  // validity anyways. For now, it's an acceptable stopgap solution.
-  if (isset($seen_ids[$id])) {
-  $id = $id . '-' . $seen_ids[$id]++;
-  }
-  else {
-  $seen_ids[$id] = 1;
-  }
-
-  return $id;
-  } */
-
 function islandora_authority_theme() {
-  return array(
-    'islandora_authority_textfield' => array(),
-    //'authorityelement' => array(),
-    'islandora_authority_hidden' => array()
+  $items = array();
+
+  $items['islandora_authority_textfield'] = array(
+    'render element' => 'element',
+    'file' => 'theme/theme.inc',
   );
-}
 
-function islandora_authority_element_process($element, $edit, &$form_state, $complete_form) {
-  $element['#id'] = $element['#islandora_authority_id'] = implode('--', array(
-    $complete_form['#build_id'],
-    $element['#hash']
-      ));
-  return $element;
-}
-
-function islandora_authority_textfield_process($element, $edit, &$form_state, $complete_form) {
-  $element['#autocomplete_path'] = implode('/', array(
-    $element['#autocomplete_path'],
-    $complete_form['#build_id'],
-    $element['#hash']
-      ));
-  return $element;
+  return $items;
 }
 
 /**
- * Theme implementation for custom textfield...  Only difference from 'regular'
- *  textfield is the use of the 'islandora_authority_id' instead of the 'real' id
- * @param array $element 'preprocessed' element definition.
- * @return string Containing the markup for the given element
+ * Process so we can process.
+ *
+ * Drupal is silly and does not allow a file to be loaded reliably when loading
+ * an element.
  */
-function theme_islandora_authority_textfield($element) {
-  $size = empty($element['#size']) ? '' : ' size="' . $element['#size'] . '"';
-  $maxlength = empty($element['#maxlength']) ? '' : ' maxlength="' . $element['#maxlength'] . '"';
-  $class = array('form-text');
-  $extra = '';
-  $output = '';
-  if ($element['#autocomplete_path'] && menu_valid_path(array('link_path' => $element['#autocomplete_path']))) {
-    $mod_path = drupal_get_path('module', 'islandora_authority');
-    drupal_add_js("$mod_path/js/jquery.scrollTo-1.4.3-min.js", 'module');
-    drupal_add_js("$mod_path/js/autocomplete.js", 'module');
-    drupal_add_css("$mod_path/css/autocomplete.css", 'module');
-    $class[] = 'form-islandora_authority_autocomplete';
-    $extra = '<input class="islandora_authority_autocomplete" type="hidden" id="' . $element['#islandora_authority_id'] . '-autocomplete" value="' . check_url(url($element['#autocomplete_path'], array('absolute' => TRUE))) . '" disabled="disabled" />';
-  }
-  _form_set_class($element, $class);
-
-  if (isset($element['#field_prefix'])) {
-    $output .= '<span class="field-prefix">' . $element['#field_prefix'] . '</span> ';
-  }
-
-  $output .= '<input type="text"' . $maxlength . ' name="' . $element['#name'] . '" id="' . $element['#islandora_authority_id'] . '"' . $size . ' value="' . check_plain($element['#value']) . '"' . drupal_attributes($element['#attributes']) . ' />';
-
-  if (isset($element['#field_suffix'])) {
-    $output .= ' <span class="field-suffix">' . $element['#field_suffix'] . '</span>';
-  }
-
-  //dd($element);
-  $toReturn = theme('form_element', $element, $output) . $extra;
-  //dd($toReturn);
-  return $toReturn;
-}
-
-function theme_islandora_authority_hidden($element) {
-  return '<input type="hidden" name="' . $element['#name'] . '" id="' . $element['#islandora_authority_id'] . '" value="' . check_plain($element['#value']) . "\" " . drupal_attributes($element['#attributes']) . " />\n";
-}
-
-/**
- * @deprecated call each field individually...
- * @param array $element
- * @return string
- */
-function theme_authorityelement($element) {
-  $class = 'form-authority_element';
-  if (isset($element['#attributes']['class'])) {
-    $class .= ' ' . $element['#attributes']['class'];
-  }
-  $element['#children'] = '<div class="' . $class . '">' . (!empty($element['#children']) ? $element['#children'] : '') . '</div>';
-  if ($element['#title'] || $element['#description']) {
-    unset($element['#id']);
-    return theme('form_element', $element, $element['#children']);
-  }
-  else {
-    return $element['#children'];
-  }
-}
-
-/**
- * @deprecated calling the elements indivudually works...  Needs some way to configure which fields to get from Solr.
- * @param type $element
- * @return type
- */
-function islandora_authority_element_expansion($element) {
-  foreach ($element['#subfields'] as $key => $values) {
-    if (!isset($element[$key])) {
-      $id = array_merge($element['#parents'], array('-' . $key));
-      $element[$key] = array_merge($values, array(
-        '#parents' => $element['#parents'],
-        '#autocomplete_path' => $element['#autocomplete_path'] . '/' . urlencode($key),
-        '#id' => form_clean_id('edit-' . implode('-', $id)),
-        '#attributes' => array('field' => $key)
-          ));
-    }
-  }
+function islandora_authority_load_theme_file($element, &$form_state, $complete_form) {
+  form_load_include($form_state, 'inc', 'islandora_authority', 'theme/theme');
   return $element;
 }

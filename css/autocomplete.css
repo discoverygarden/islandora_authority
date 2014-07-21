@@ -1,58 +1,20 @@
-/* 
-    Document   : autocomplete
-    Created on : Nov 9, 2011, 1:59:51 PM
-    Author     : adam
-    Description:
-        Purpose of the stylesheet follows.
-*/
-
-/* 
-   TODO customize this sample style
-   Syntax recommendation http://www.w3.org/TR/REC-CSS2/
-*/
-
-root { 
-  display: block;
-}
-
-html.js input.throbbing {
-  background-position: 100% -18px !important;
-}
-
-/* Animated throbber */
-html.js input.form-islandora_authority_autocomplete {
-  background-image: url(./throbber.gif);
-  background-repeat: no-repeat;
-  background-position: 100% 2px; /* LTR */
-}
-
-
-
-#islandora_authority_autocomplete, #islandora_authority_autocomplete > ul > li > ul {
-  position: absolute;
-  display: none;
-}
-
-#islandora_authority_autocomplete > ul , #islandora_authority_autocomplete > ul > li > ul {
-  border: 1px solid;
+/**
+ * @file
+ * Alternate handling to allow listing of secondary options.
+ */
+.form-type-islandora-authority-textfield #autocomplete {
   overflow: visible;
-  z-index: 100;
+  border: none;
 }
 
-#islandora_authority_autocomplete ul {
-  padding: 0;
-  margin: 0;
+.form-type-islandora-authority-textfield #autocomplete ul {
+  border: #000000 1px solid;
 }
 
-#islandora_authority_autocomplete li {
-  cursor: default;
-  margin: 0;
-  padding: 2px;
-  background: white repeat scroll 0 0;
-  color: #000000;
-  white-space: pre;
+.form-type-islandora-authority-textfield #autocomplete ul ul {
+  position: absolute;
 }
 
-#islandora_authority_autocomplete li.selected {
-  background-color: #0072B9;
+.form-type-islandora-authority-textfield #autocomplete div {
+  overflow: hidden;
 }

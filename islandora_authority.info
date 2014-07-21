@@ -1,7 +1,7 @@
 name = Islandora Authority Module
 description = Offers autocompletion and the creation of relations to authoritative records
-dependencies[] = islandora_solr_search
-dependancies[] = xml_forms
+dependencies[] = islandora_solr
+dependancies[] = objective_forms
 package = Islandora Tools
-version = 6.1dev
-core = 6.x
+version = 7.x-dev
+core = 7.x

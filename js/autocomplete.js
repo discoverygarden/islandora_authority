@@ -1,125 +1,62 @@
-// $Id: autocomplete.js,v 1.23 2008/01/04 11:53:21 goba Exp $
+(function ($) {
 
 /**
- * Attaches the autocomplete behavior to all required fields
+ * Attaches the autocomplete behavior to all required fields.
  */
-if (typeof Drupal.settings.islandora_authority == 'undefined') {
-  Drupal.settings.islandora_authority = new Object();
-}
-Drupal.behaviors.islandora_authority_autocomplete = function (context) {
-  var acdb = [];
-  $('input.islandora_authority_autocomplete:not(.islandora_authority_autocomplete-processed)', context).each(function () {
-    var uri = this.value;
-    if (!acdb[uri]) {
-      acdb[uri] = new Drupal.settings.islandora_authority.ACDB(uri);
-    }
-    var input = $('#' + this.id.substr(0, this.id.length - 13))
-      .attr('autocomplete', 'OFF')[0];
-    $(input.form).submit(Drupal.settings.islandora_authority.autocompleteSubmit);
-    new Drupal.settings.islandora_authority.jsAC(input, acdb[uri]);
-    $(this).addClass('islandora_authority_autocomplete-processed');
-  });
-};
-
-/**
- * Prevents the form from submitting if the suggestions popup is open
- * and closes the suggestions popup when doing so.
- */
-Drupal.settings.islandora_authority.autocompleteSubmit = function () {
-  return $('#islandora_authority_autocomplete').each(function () {
-    this.owner.hidePopup();
-  }).size() == 0;
-};
-
-/**
- * An AutoComplete object
- */
-Drupal.settings.islandora_authority.jsAC = function (input, db) {
-  var ac = this;
-  this.input = input;
-  this.db = db;
-  $(this.input)
-    .keydown(function (event) {return ac.onkeydown(this, event);})
-    .keyup(function (event) {ac.onkeyup(this, event);})
-    .blur(function () {
-        $(":not(#islandora_authority_autocomplete)").click(function(event) {
-            event.stopPropagation();
-            //if($("#islandora_authority_autocomplete").is(":visible")) { //this line was causing some issues
-            if($("#islandora_authority_autocomplete").css("display") == "block") {
-                ac.hidePopup();ac.db.cancel();
-            }
-        });
+Drupal.behaviors.islandora_authority_autocomplete = {
+  attach: function (context, settings) {
+    var acdb = [];
+    $('input.islandora-authority-autocomplete', context).once('islandora-authority-autocomplete', function () {
+      var uri = this.value;
+      if (!acdb[uri]) {
+        acdb[uri] = new Drupal.ACDB(uri);
+      }
+      var $input = $('#' + this.id.substr(0, this.id.length - 34))
+        .attr('autocomplete', 'OFF')
+        .attr('aria-autocomplete', 'list');
+      $($input[0].form).submit(Drupal.autocompleteSubmit);
+      $input.parent()
+        .attr('role', 'application')
+        .append($('<span class="element-invisible" aria-live="assertive"></span>')
+          .attr('id', $input.attr('id') + '-autocomplete-aria-live')
+        );
+      new Drupal.islandora_authority_jsAC($input, acdb[uri]);
     });
+  }
 };
 
 /**
- * Handler for the "keydown" event
+ * An AutoComplete object.
  */
-Drupal.settings.islandora_authority.jsAC.prototype.onkeydown = function (input, e) {
+Drupal.islandora_authority_jsAC = Drupal.jsAC;
+
+var oldonkeydown = Drupal.islandora_authority_jsAC.prototype.onkeydown;
+
+/**
+ * Handler for the "keydown" event.
+ */
+Drupal.islandora_authority_jsAC.prototype.onkeydown = function (input, e) {
   if (!e) {
     e = window.event;
   }
+
   switch (e.keyCode) {
-    case 40: // down arrow
-      this.selectDown();
-      return false;
-    case 38: // up arrow
-      this.selectUp();
-      return false;
     case 37:
       this.selectLeft();
       return false;
     case 39:
       this.selectRight();
       return false;
-    default: // all other keys
-      return true;
+    default: // All other keys.
+      return oldonkeydown.call(this, input, e);
   }
 };
 
 /**
- * Handler for the "keyup" event
+ * Puts the currently highlighted suggestion into the autocomplete field.
  */
-Drupal.settings.islandora_authority.jsAC.prototype.onkeyup = function (input, e) {
-  if (!e) {
-    e = window.event;
-  }
-  switch (e.keyCode) {
-    case 16: // shift
-    case 17: // ctrl
-    case 18: // alt
-    case 20: // caps lock
-    case 33: // page up
-    case 34: // page down
-    case 35: // end
-    case 36: // home
-    case 37: // left arrow
-    case 38: // up arrow
-    case 39: // right arrow
-    case 40: // down arrow
-      return true;
-
-    case 9:  // tab
-    case 13: // enter
-    case 27: // esc
-      this.hidePopup(e.keyCode);
-      return true;
-
-    default: // all other keys
-      if (input.value.length > 0)
-        this.populatePopup();
-      else
-        this.hidePopup(e.keyCode);
-      return true;
-  }
-};
-
-/**
- * Puts the currently highlighted suggestion into the autocomplete field
- */
-Drupal.settings.islandora_authority.jsAC.prototype.select = function (node) {
-  //TODO:  Test this...
-  var obj = node.autocompleteSet;
+Drupal.islandora_authority_jsAC.prototype.select = function (node) {
+  var obj = $(node).data('autocompleteSet');
   var parents = this.input.id.split('--');
   for(var prop in obj) {
     if(obj.hasOwnProperty(prop) && typeof obj[prop] !== 'function' &&
@@ -128,360 +65,208 @@ Drupal.settings.islandora_authority.jsAC.prototype.select = function (node) {
       var id_parts = parents.slice(0, parents.length - 1);
 
       //Add the part which the current property represents, while making the property
-      //  name match what should have been put into the id, so we can select the
-      //  relevant field below.
+      // name match what should have been put into the id, so we can select the
+      // relevant field below.
       id_parts.push(prop.replace(/(\]\[|_| )/g, '-'));
 
       //Update the contents of the required field.
       $('#'+id_parts.join('--')).val(obj[prop]);
     }
   }
-  this.unhighlightSub(this.selected2);
+  this.sub_unhighlight(this.sub_selected);
   this.unhighlight(this.selected);
 };
 
+var oldselectdown = Drupal.islandora_authority_jsAC.prototype.selectDown;
+
 /**
- * Highlights the next suggestion
+ * Highlights the next suggestion.
  */
-Drupal.settings.islandora_authority.jsAC.prototype.selectDown = function () {
-  if (this.selected2){
-    var next = $(this.selected2).nextAll('li:first')[0];
-    if (next) {
-      this.highlightSub(next);
-    }
-    else {
-      var lis = $('li', this.popup2);
-      if (lis.size() > 0) {
-        this.highlightSub(lis.get(0));
-      }
-    }
+Drupal.islandora_authority_jsAC.prototype.selectDown = function () {
+  if (this.sub_selected && this.sub_selected.nextSibling) {
+    this.sub_highlight(this.sub_selected.nextSibling);
   }
-  else if (this.selected){
-    var next = $(this.selected).nextAll('li:first')[0];
-    if (next) {
-      this.highlight(this.selected.nextSibling);
-      $('#islandora_authority_autocomplete ul').scrollTo(next);
+  else if (this.sub_selected && this.sub_popup) {
+    var lis = $('li', this.sub_popup);
+    if (lis.length > 0) {
+      this.sub_highlight(lis.get(0));
     }
   }
   else {
-    var lis = $('li', this.popup);
-    if (lis.size() > 0) {
-      this.highlight(lis.get(0));
-      $('#islandora_authority_autocomplete ul').scrollTo(lis.get(0));
-    }
+    oldselectdown.call(this)
   }
- 
 };
+
+var oldselectup = Drupal.islandora_authority_jsAC.prototype.selectUp;
 
 /**
- * Highlights the previous suggestion
+ * Highlights the previous suggestion.
  */
-Drupal.settings.islandora_authority.jsAC.prototype.selectUp = function () {
-  var prev = false;
-  if (this.selected2) {
-    prev = $(this.selected2).prevAll('li:first')[0];
-    if (prev) {
-      this.highlightSub(prev);
-      $('#islandora_authority_autocomplete ul').scrollTo(prev);
-    }
+Drupal.islandora_authority_jsAC.prototype.selectUp = function () {
+  if (this.sub_selected && this.sub_selected.previousSibling) {
+    this.sub_highlight(this.sub_selected.previousSibling);
   }
-  else if (this.selected) {
-    prev = $(this.selected).prevAll('li:first')[0];
-    if (prev) {
-      this.highlight(prev);
-      $('#islandora_authority_autocomplete ul').scrollTo(prev);
-    }
+  else if (this.sub_selected && this.sub_popup) {
+    // No-op.
   }
- };
-
-Drupal.settings.islandora_authority.jsAC.prototype.selectLeft = function () {
-  if (this.selected2) {
-    this.unhighlightSub(this.selected2);
-    this.highlight(this.selected);
+  else {
+    oldselectup.call(this)
   }
 };
 
-Drupal.settings.islandora_authority.jsAC.prototype.selectRight = function () {
-  if (this.selected2) {
-    //Insert the given object...
+Drupal.islandora_authority_jsAC.prototype.selectRight = function () {
+  if (this.sub_selected) {
     this.hidePopup(false);
   }
   else if (this.selected) {
-    this.showSubmenu(this.selected);
-    if (typeof this.popup2 != 'undefined') {
-      this.highlightSub(this.popup2.firstChild);
+    var first_subitem = $(this.sub_popup).find('li').first().get().pop();
+    if (typeof first_subitem != 'undefined') {
+      this.sub_highlight(first_subitem);
+    }
+    else {
+      this.hidePopup(false);
     }
   }
-  else {
-    //Dunno...
-    //this.select(this.selected);
+};
+
+Drupal.islandora_authority_jsAC.prototype.selectLeft = function () {
+  if (this.sub_selected) {
+    this.sub_unhighlight(this.sub_selected);
   }
 };
 
-/**
- * Highlights a suggestion
- */
-Drupal.settings.islandora_authority.jsAC.prototype.highlight = function (node) {
-  if (this.selected2) { //Deselect the submenu entry.
-    this.unhighlightSub(this.selected2);
-  }
-  if (this.selected) {
-    $(this.selected).removeClass('selected');
-  }
-  $(node).addClass('selected');
-  this.selected = node;
+var oldhighlight = Drupal.islandora_authority_jsAC.prototype.highlight;
 
-  //Try to show a submenu (additional decisions made there)
+/**
+ * Highlights a suggestion.
+ */
+Drupal.islandora_authority_jsAC.prototype.highlight = function (node) {
+  oldhighlight.call(this, node);
   this.showSubmenu(this.selected);
 };
-
-Drupal.settings.islandora_authority.jsAC.prototype.highlightSub = function (node) {
-  if (this.selected2) {
-    $(this.selected2).removeClass('selected');
+Drupal.islandora_authority_jsAC.prototype.sub_highlight = function (node) {
+  if (this.sub_selected) {
+    $(this.sub_selected).removeClass('selected');
   }
   $(node).addClass('selected');
-  this.selected2 = node;
+  this.sub_selected = node;
+  $(this.ariaLive).html($(this.sub_selected).html());
 };
 
 /**
- * Unhighlights a suggestion
+ * Unhighlights a suggestion.
  */
-Drupal.settings.islandora_authority.jsAC.prototype.unhighlight = function (node) {
-  if (!this.selected2) {
-    $(node).removeClass('selected');
-    this.selected = false;
-  }
-};
-
-Drupal.settings.islandora_authority.jsAC.prototype.unhighlightSub = function (node) {
+Drupal.islandora_authority_jsAC.prototype.sub_unhighlight = function (node) {
   $(node).removeClass('selected');
-  this.selected2 = false;
+  this.sub_selected = false;
+  $(this.ariaLive).empty();
 };
 
 /**
- * Hides the autocomplete suggestions
+ * Hides the autocomplete suggestions.
  */
-Drupal.settings.islandora_authority.jsAC.prototype.hidePopup = function (keycode) {
-  // Select item if the right key or mousebutton was pressed...  seems kinda redundant?
-  if ((keycode && keycode != 46 && keycode != 8 && keycode != 27) || (!keycode)) {
-    if (this.selected2) {
-      this.select(this.selected2);
+Drupal.islandora_authority_jsAC.prototype.hidePopup = function (keycode) {
+  // Select item if the right key or mousebutton was pressed.
+  if (((keycode && keycode != 46 && keycode != 8 && keycode != 27) || !keycode)) {
+    if (this.sub_selected) {
+      this.select(this.sub_selected);
     }
     else if (this.selected) {
       this.select(this.selected);
     }
-    //this.input.value = this.selected.autocompleteValue;
-  }
-  // Hide popups
-  
- var popup = this.popup2;
-  if (popup) {
-    delete this.popup2;
-    $(popup).fadeOut('fast', function() {$(popup).remove();});
   }
 
-  popup = this.popup;
-  if (popup) {
-    delete this.popup;
-    $(popup).fadeOut('fast', function() {$(popup).remove();});
+  // Hide popup.
+  var sub_popup = this.sub_popup;
+  if (sub_popup) {
+    this.sub_popup = null;
+    $(sub_popup).fadeOut('fast', function () { $(sub_popup).remove(); });
   }
+  var popup = this.popup;
+  if (popup) {
+    this.popup = null;
+    $(popup).fadeOut('fast', function () { $(popup).remove(); });
+  }
+
   this.selected = false;
-  this.selected2 = false;
+  this.sub_selected = false;
+  $(this.ariaLive).empty();
 };
 
-/**
- * Positions the suggestions popup and starts a search
- */
-Drupal.settings.islandora_authority.jsAC.prototype.populatePopup = function () {
+Drupal.islandora_authority_jsAC.prototype.showSubmenu = function (node) {
   // Show popup
-  if (this.popup) {
-    $(this.popup).remove();
-  }
-  this.selected = false;
-  this.popup = document.createElement('div');
-  this.popup.id = 'islandora_authority_autocomplete';
-  this.popup.owner = this;
-  $(this.popup).css({
-    marginTop: this.input.offsetHeight +'px',
-    width: (this.input.offsetWidth) +'px',
-    overflow: 'hidden'
-  });
-  $(this.input).before(this.popup);
-
-  // Do search
-  this.db.owner = this;
-  this.db.search(this.input.value);
-};
-
-Drupal.settings.islandora_authority.jsAC.prototype.showSubmenu = function (node) {
-  // Show popup
-  if (this.popup2) {
-    $(this.popup2).hide();
-  }
-  this.selected2 = false;
-  if (typeof node.alt_popup != 'undefined') {
-    /*this.popup2 = document.createElement('div');
-    this.popup2.id = 'islandora_authority_submenu';
-    this.popup2.owner = this;
-
-    */
-
-    this.popup2 = node.alt_popup;
-    $(this.popup2)
+  var ul = $(node).find('ul');
+  var same = this.sub_popup && this.sub_popup.get().pop() == ul.get().pop();
+  if (!same) {
+    if (this.sub_popup) {
+      $(this.sub_popup).hide();
+    }
+    if (this.sub_selected) {
+      this.sub_unhighlight(this.sub_selected);
+    }
+    this.sub_popup = ul
       .css({
         marginLeft: (node.offsetWidth - 4) +'px',
         width: (node.offsetWidth) +'px',
         top: (node.offsetTop) + 'px'
       })
       .show();
-
-    //$(this.selected).before(this.popup2);
   }
 };
 
 /**
- * Fills the suggestion popup with any matches received
+ * Fills the suggestion popup with any matches received.
  */
-Drupal.settings.islandora_authority.jsAC.prototype.found = function (matches) {
+Drupal.islandora_authority_jsAC.prototype.found = function (matches) {
   // If no value in the textfield, do not show the popup.
-  if (!this.input.value.length || matches.length == 0) {
+  if (!this.input.value.length) {
     return false;
   }
 
-  // Prepare matches
-  var ul = document.createElement('ul');
-  $(ul).css({maxHeight: '180px', overflowX: 'scroll', overflowY: 'auto'});
+  // Prepare matches.
+  var ul = $('<ul></ul>');
   var ac = this;
   for (var key in matches) {
-    var obj = matches[key];
-    var li = document.createElement('li');
-    $(li)
-      .html('<div>'+ obj['full-display'] +'</div>')
-      .click(function () {
-        ac.select(this);
-      })
-      .mouseenter(function () {
-        ac.highlight(this);
-      })
-      .mouseleave(function () {
-        ac.unhighlight(this);
-      }); //Gonna require some shenanigans to make it stay selected when using the mouse...
-
-    var alt_ul = document.createElement('ul');
-    var alts = obj['alts']
-    for (var prop in alts) {
-      if(typeof obj[prop] !== 'function') {
-        var alt_li = document.createElement('li');
-        //FIXME:  Something is broken with the mouse handling...  Never selects in the submenu?
-        $(alt_li)
-          .html('<div>'+ alts[prop]['full-display'] +'</div>')
-          .mouseenter(function () {
-            ac.highlightSub(this);
-          })
-          .mouseleave(function () {
-            ac.unhighlightSub(this);
-          })
-          .click(function (event) {
-            if (event.which == 1) {
-              ac.select(this);
-            }
-            event.stopPropagation();
-          });
-        alt_li.autocompleteSet = alts[prop];
-        $(alt_ul).append(alt_li).hide();
-      }
+    var li = $('<li></li>');
+    li
+      .html($('<div></div>').html(matches[key]['full-display']))
+      .mousedown(function () { ac.select(this); })
+      .mouseover(function () { ac.highlight(this); })
+      .mouseout(function () { ac.unhighlight(this); })
+      .data('autocompleteSet', matches[key])
+      .appendTo(ul);
+    var alt_ul = $('<ul></ul>');
+    alt_ul.hide();
+    for (var prop in matches[key]['alts']) {
+      $('<li></li>')
+        .html($('<div></div>').html(matches[key]['alts'][prop]['full-display']))
+        .mousedown(function (evt) {
+          if (evt.which == 1) {
+            ac.select(this);
+          }
+          evt.stopPropagation();
+        })
+        .mouseover(function () { ac.sub_highlight(this); })
+        .mouseout(function () { ac.sub_unhighlight(this); })
+        .data('autocompleteSet', matches[key]['alts'][prop])
+        .appendTo(alt_ul);
     }
-
-    if (alt_ul.childNodes.length > 0) {
-      li.alt_popup = alt_ul;
+    if (alt_ul.children().length > 0) {
       $(li).append(alt_ul);
     }
-
-    li.autocompleteSet = obj;
-    $(ul).append(li);
   }
 
-  // Show popup with matches, if any
+  // Show popup with matches, if any.
   if (this.popup) {
-    if (ul.childNodes.length > 0) {
+    if (ul.children().length) {
       $(this.popup).empty().append(ul).show();
+      $(this.ariaLive).html(Drupal.t('Autocomplete popup'));
     }
     else {
-      $(this.popup).css({visibility: 'hidden'});
+      $(this.popup).css({ visibility: 'hidden' });
       this.hidePopup();
     }
   }
 };
 
-Drupal.settings.islandora_authority.jsAC.prototype.setStatus = function (status) {
-  switch (status) {
-    case 'begin':
-      $(this.input).addClass('throbbing');
-      break;
-    case 'cancel':
-    case 'error':
-    case 'found':
-      $(this.input).removeClass('throbbing');
-      break;
-  }
-};
-
-/**
- * An AutoComplete DataBase object
- */
-Drupal.settings.islandora_authority.ACDB = function (uri) {
-  this.uri = uri;
-  this.delay = 300;
-  this.cache = {};
-};
-
-/**
- * Performs a cached and delayed search
- */
-Drupal.settings.islandora_authority.ACDB.prototype.search = function (searchString) {
-  var db = this;
-  this.searchString = searchString;
-
-  // See if this key has been searched for before
-  if (this.cache[searchString]) {
-    return this.owner.found(this.cache[searchString]);
-  }
-
-  // Initiate delayed search
-  if (this.timer) {
-    clearTimeout(this.timer);
-  }
-  this.timer = setTimeout(function() {
-    db.owner.setStatus('begin');
-
-    // Ajax GET request for autocompletion
-    $.ajax({
-      type: "GET",
-      url: db.uri +'/'+ Drupal.encodeURIComponent(searchString),
-      dataType: 'json',
-      success: function (matches) {
-        if (typeof matches['status'] == 'undefined' || matches['status'] != 0) {
-          db.cache[searchString] = matches;
-          // Verify if these are still the matches the user wants to see
-          if (db.searchString == searchString) {
-            db.owner.found(matches);
-          }
-          db.owner.setStatus('found');
-        }
-      },
-      error: function (xmlhttp) {
-        alert(Drupal.ahahError(xmlhttp, db.uri));
-      }
-    });
-  }, this.delay);
-};
-
-/**
- * Cancels the current autocomplete request
- */
-Drupal.settings.islandora_authority.ACDB.prototype.cancel = function() {
-  if (this.owner) this.owner.setStatus('cancel');
-  if (this.timer) clearTimeout(this.timer);
-  this.searchString = '';
-};
-
+})(jQuery);
