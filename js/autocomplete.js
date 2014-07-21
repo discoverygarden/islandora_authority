@@ -132,7 +132,6 @@ Drupal.islandora_authority_jsAC.prototype.selectRight = function () {
 Drupal.islandora_authority_jsAC.prototype.selectLeft = function () {
   if (this.sub_selected) {
     this.sub_unhighlight(this.sub_selected);
-    //this.highlight(this.selected);
   }
 };
 
