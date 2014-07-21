@@ -43,3 +43,27 @@ function theme_islandora_authority_textfield($variables) {
 
   return $output . $extra;
 }
+
+/**
+ * Process callback for islandora_authority elements.
+ */
+function islandora_authority_element_process($element, &$form_state, $complete_form) {
+  $element['#attributes']['id'] = implode('--', array(
+    $complete_form['#build_id'],
+    $element['#hash'],
+  ));
+  $form_state['cache'] = TRUE;
+  return $element;
+}
+
+/**
+ * Process callback for islandora_authority_textfield.
+ */
+function islandora_authority_textfield_process($element, &$form_state, $complete_form) {
+  $element['#autocomplete_path'] = implode('/', array(
+    $element['#autocomplete_path'],
+    $complete_form['#build_id'],
+    $element['#hash'],
+  ));
+  return $element;
+}

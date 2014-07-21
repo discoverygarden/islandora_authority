@@ -13,6 +13,10 @@ function islandora_authority_element_info() {
 
   $mod_path = drupal_get_path('module', 'islandora_authority');
 
+  // XXX: Seems weird loading a file here; however, there's nowhere else it can
+  // go...  "#attached" is called after "#process".
+  module_load_include('inc', 'islandora_authority', 'theme/theme');
+
   $elements['islandora_authority_textfield'] = array(
     '#theme' => 'islandora_authority_textfield',
     '#theme_wrappers' => array('form_element'),
@@ -76,34 +80,4 @@ function islandora_authority_theme() {
   );
 
   return $items;
-}
-
-/**
- * Process callback for islandora_authority elements.
- *
- * XXX: Would be in theme/theme.inc, but it doesn't appear to be loaded
- * reliably?
- */
-function islandora_authority_element_process($element, &$form_state, $complete_form) {
-  $element['#attributes']['id'] = implode('--', array(
-    $complete_form['#build_id'],
-    $element['#hash'],
-  ));
-  $form_state['cache'] = TRUE;
-  return $element;
-}
-
-/**
- * Process callback for islandora_authority_textfield.
- *
- * XXX: Would be in theme/theme.inc, but it doesn't appear to be loaded
- * reliably?
- */
-function islandora_authority_textfield_process($element, &$form_state, $complete_form) {
-  $element['#autocomplete_path'] = implode('/', array(
-    $element['#autocomplete_path'],
-    $complete_form['#build_id'],
-    $element['#hash'],
-  ));
-  return $element;
 }
