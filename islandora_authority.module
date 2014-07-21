@@ -13,10 +13,6 @@ function islandora_authority_element_info() {
 
   $mod_path = drupal_get_path('module', 'islandora_authority');
 
-  // XXX: Seems weird loading a file here; however, there's nowhere else it can
-  // go...  "#attached" is called after "#process".
-  module_load_include('inc', 'islandora_authority', 'theme/theme');
-
   $elements['islandora_authority_textfield'] = array(
     '#theme' => 'islandora_authority_textfield',
     '#theme_wrappers' => array('form_element'),
@@ -26,6 +22,7 @@ function islandora_authority_element_info() {
     '#autocomplete_path' => 'islandora/authority',
     '#process' => array(
       'ajax_process_form',
+      'islandora_authority_load_theme_file',
       'islandora_authority_textfield_process',
       'islandora_authority_element_process',
     ),
@@ -45,6 +42,7 @@ function islandora_authority_element_info() {
     '#theme' => 'hidden',
     '#input' => TRUE,
     '#process' => array(
+      'islandora_authority_load_theme_file',
       'islandora_authority_element_process',
     ),
   );
@@ -80,4 +78,15 @@ function islandora_authority_theme() {
   );
 
   return $items;
+}
+
+/**
+ * Process so we can process.
+ *
+ * Drupal is silly and does not allow a file to be loaded reliably when loading
+ * an element.
+ */
+function islandora_authority_load_theme_file($element, &$form_state, $complete_form) {
+  form_load_include($form_state, 'inc', 'islandora_authority', 'theme/theme');
+  return $element;
 }
