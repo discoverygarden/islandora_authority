@@ -105,12 +105,13 @@ function islandora_authority_get_fields($build_id, $element_hash) {
   $element_types = module_invoke('islandora_authority', 'element_info');
   foreach ($parent->toArray() as $sibling) {
     if (is_array($sibling) && isset($sibling['#type']) && array_key_exists($sibling['#type'], $element_types)) {
-      $to_return['fields'][$sibling['#hash']] = array(
+      $to_return['fields'][$sibling['#hash']] = array_filter(array(
         'search_field_name' => $sibling['#user_data']['islandora_authority_solr_search_field'],
         'display_field_name' => (!empty($sibling['#user_data']['islandora_authority_solr_display_field']) ?
           $sibling['#user_data']['islandora_authority_solr_display_field'] :
           $sibling['#user_data']['islandora_authority_solr_search_field']),
-        'mapping' => $sibling['#user_data']['islandora_authority_mapping']);
+        'mapping' => drupal_array_get_nested_value($sibling['#user_data'], array('islandora_authority_mapping')),
+      ));
       $to_return['fl'][] = $to_return['fields'][$sibling['#hash']]['display_field_name'];
     }
   }
