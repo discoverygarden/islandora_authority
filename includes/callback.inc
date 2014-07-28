@@ -42,10 +42,26 @@ function islandora_authority_build_match($solr_doc, $field_info) {
     }
 
     $keys[] = $hash;
-    $fields[] = (array) $solr_doc[$field['display_field_name']];
+    $fields[] = isset($solr_doc[$field['display_field_name']]) ?
+      (array) $solr_doc[$field['display_field_name']] :
+      array();
   }
 
   $to_return = array('alts' => array());
+  $counts = array_map('count', $fields);
+  $min_count = min($counts);
+  $max_count = max($counts);
+  if ($min_count != $max_count) {
+    foreach ($fields as &$field) {
+      $count = count($field);
+      $pad_value = t('NO VALUE');
+      if ($count == 1) {
+        $pad_value = end($field);
+      }
+      $field = array_pad($field, $max_count, $pad_value);
+    }
+    unset($field);
+  }
   $zipped = call_user_func_array('array_map', array_merge(array(NULL), $fields));
 
   foreach ($zipped as $index => &$value) {
