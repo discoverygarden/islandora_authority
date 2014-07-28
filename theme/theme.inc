@@ -48,7 +48,7 @@ function theme_islandora_authority_textfield($variables) {
  * Process callback for islandora_authority elements.
  */
 function islandora_authority_element_process($element, &$form_state, $complete_form) {
-  $element['#attributes']['id'] = implode('--', array(
+  $element['#id'] = $element['#attributes']['id'] = implode('--', array(
     $complete_form['#build_id'],
     $element['#hash'],
   ));
