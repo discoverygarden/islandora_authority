@@ -54,8 +54,10 @@ function islandora_authority_build_match($solr_doc, $field_info) {
   if ($min_count != $max_count) {
     foreach ($fields as &$field) {
       $count = count($field);
-      $pad_value = t('NO VALUE');
+      $pad_value = '';
       if ($count == 1) {
+        // If there happens to be only a single value, assume that it should be
+        // repeated for each: associating the PID with each result, for example.
         $pad_value = end($field);
       }
       $field = array_pad($field, $max_count, $pad_value);
