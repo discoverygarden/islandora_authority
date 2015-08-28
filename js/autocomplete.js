@@ -28,8 +28,8 @@ Drupal.behaviors.islandora_authority_autocomplete = {
 /**
  * An AutoComplete object.
  */
-Drupal.islandora_authority_jsAC = Drupal.jsAC;
-
+Drupal.islandora_authority_jsAC = function(input, uri) { Drupal.jsAC.call(this, input, uri); };
+Drupal.islandora_authority_jsAC.prototype = $.extend(true, {}, Drupal.jsAC.prototype);
 var oldonkeydown = Drupal.islandora_authority_jsAC.prototype.onkeydown;
 
 /**

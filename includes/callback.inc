@@ -68,7 +68,7 @@ function islandora_authority_build_match($solr_doc, $field_info) {
 
   foreach ($zipped as $index => &$value) {
     $to_merge = array();
-    foreach (array_combine($keys, $value) as $hash => $content) {
+    foreach (array_combine($keys, (array) $value) as $hash => $content) {
       if (isset($map[$hash])) {
         $mapped[$map[$hash]] = $content;
       }
@@ -129,6 +129,9 @@ function islandora_authority_get_fields($build_id, $element_hash) {
           $sibling['#user_data']['islandora_authority_solr_display_field'] :
           $sibling['#user_data']['islandora_authority_solr_search_field']),
         'mapping' => drupal_array_get_nested_value($sibling['#user_data'], array('islandora_authority_mapping')),
+        'search_without_dismax' => (isset($sibling['#user_data']['islandora_authority_search_without_dismax']) ?
+          $sibling['#user_data']['islandora_authority_search_without_dismax'] :
+          FALSE),
       ));
       $to_return['fl'][] = $to_return['fields'][$sibling['#hash']]['display_field_name'];
     }
@@ -142,11 +145,16 @@ function islandora_authority_get_fields($build_id, $element_hash) {
 function islandora_authority_autocomplete($build_id, $element, $string = '') {
   $fields = islandora_authority_get_fields($build_id, $element);
   $qp = new IslandoraSolrQueryProcessor();
-  $qp->buildQuery($string);
-  $qp->solrParams['qf'] = $fields['fields'][$element]['search_field_name'];
+  if (isset($fields['fields'][$element]['search_without_dismax'])) {
+    $qp->buildQuery($fields['fields'][$element]['search_field_name'] . ":$string*");
+  }
+  else {
+    $qp->buildQuery($string);
+    $qp->solrParams['qf'] = $fields['fields'][$element]['search_field_name'];
+    $qp->solrParams['defType'] = 'dismax';
+  }
   $qp->solrParams['fl'] = implode(',', array_merge((array) $fields['fl'], array('PID')));
   $qp->solrParams['fq'] = $fields['fq'];
-  $qp->solrParams['defType'] = 'dismax';
   $qp->executeQuery(FALSE, TRUE);
   $matches = array();
   foreach ($qp->islandoraSolrResult['response']['objects'] as $object) {
