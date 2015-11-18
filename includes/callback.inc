@@ -140,10 +140,12 @@ function islandora_authority_get_fields($build_id, $element_hash) {
 }
 
 /**
- * Page/autocomplete callback to grab results from Solr.
+ * Builds and executes an autocomplete query for the given element.
+ *
+ * @return IslandoraSolrQueryProcessor
+ *   An IslandoraSolrQueryProcessor that has been built and executed.
  */
-function islandora_authority_autocomplete($build_id, $element, $string = '') {
-  $fields = islandora_authority_get_fields($build_id, $element);
+function islandora_authority_build_and_execute_autocomplete_query($build_id, $element, $fields, $string = '') {
   $qp = new IslandoraSolrQueryProcessor();
   if (isset($fields['fields'][$element]['search_without_dismax'])) {
     $qp->buildQuery($fields['fields'][$element]['search_field_name'] . ":$string*");
@@ -156,10 +158,36 @@ function islandora_authority_autocomplete($build_id, $element, $string = '') {
   $qp->solrParams['fl'] = implode(',', array_merge((array) $fields['fl'], array('PID')));
   $qp->solrParams['fq'] = $fields['fq'];
   $qp->executeQuery(FALSE, TRUE);
+  return $qp;
+}
+
+/**
+ * Page/autocomplete callback to grab results from Solr.
+ */
+function islandora_authority_autocomplete($build_id, $element, $string = '') {
+  $fields = islandora_authority_get_fields($build_id, $element);
+  $qp = islandora_authority_build_and_execute_autocomplete_query($build_id, $element, $fields, $string);
   $matches = array();
   foreach ($qp->islandoraSolrResult['response']['objects'] as $object) {
     $doc = $object['solr_doc'];
     $matches[$doc['PID']] = islandora_authority_build_match($doc, $fields);
   }
   drupal_json_output($matches);
+}
+
+/**
+ * Callback to validate the contents of an autocomplete field against Solr.
+ */
+function islandora_authority_validate($build_id, $element, $string = '') {
+  $fields = islandora_authority_get_fields($build_id, $element);
+  $qp = islandora_authority_build_and_execute_autocomplete_query($build_id, $element, $fields, $string);
+  foreach ($qp->islandoraSolrResult['response']['objects'] as $object) {
+    $doc = $object['solr_doc'];
+    $values = $doc[$fields['fields'][$fields['current']]['search_field_name']];
+    if (in_array($string, $values)) {
+      drupal_json_output(array('match' => TRUE));
+      return;
+    }
+  }
+  drupal_json_output(array('match' => FALSE));
 }

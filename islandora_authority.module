@@ -62,6 +62,22 @@ function islandora_authority_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'includes/callback.inc',
   );
+  $items['islandora/authority-validate'] = array(
+    'page callback' => 'islandora_authority_validate',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+    'file' => 'includes/callback.inc',
+  );
+  $items['admin/islandora/tools/islandora_authority'] = array(
+    'title' => 'Islandora Authority',
+    'description' => 'Configure the Islandora Authority module',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('islandora_authority_admin_form'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'includes/admin.form.inc',
+
+  );
 
   return $items;
 }
