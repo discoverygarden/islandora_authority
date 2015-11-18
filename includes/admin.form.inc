@@ -8,7 +8,7 @@
 /**
  * Gets the form definition for the Islandora Authority admin page.
  *
- * @see drupal_get_form().
+ * @see drupal_get_form()
  */
 function islandora_authority_admin_form($form, &$form_state) {
   return system_settings_form(array(
