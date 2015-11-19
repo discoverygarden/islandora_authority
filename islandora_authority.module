@@ -9,6 +9,7 @@
  * Implements hook_element_info().
  */
 function islandora_authority_element_info() {
+  global $base_url;
   $elements = array();
 
   $mod_path = drupal_get_path('module', 'islandora_authority');
@@ -32,6 +33,10 @@ function islandora_authority_element_info() {
       ),
       'js' => array(
         "$mod_path/js/autocomplete.js",
+        array(
+          'type' => 'setting',
+          'data' => array('baseUrl' => $base_url),
+        ),
       ),
       'css' => array(
         "$mod_path/css/autocomplete.css",
