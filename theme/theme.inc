@@ -37,7 +37,7 @@ function theme_islandora_authority_textfield($variables) {
     $attributes['disabled'] = 'disabled';
     $attributes['class'][] = 'islandora-authority-autocomplete';
     $extra = '<input' . drupal_attributes($attributes) . ' />';
-    if (isset($element['#validation_path'])) {
+    if (isset($element['#user_data']['islandora_authority_solr_validate_field'])) {
       $validation_attributes = array();
       $validation_attributes['type'] = 'hidden';
       $validation_attributes['id'] = $element['#attributes']['id'] . '--islandora-authority-autocomplete-validate';

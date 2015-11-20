@@ -128,6 +128,9 @@ function islandora_authority_get_fields($build_id, $element_hash) {
         'display_field_name' => (!empty($sibling['#user_data']['islandora_authority_solr_display_field']) ?
           $sibling['#user_data']['islandora_authority_solr_display_field'] :
           $sibling['#user_data']['islandora_authority_solr_search_field']),
+        'validate_field_name' => (!empty($sibling['#user_data']['islandora_authority_solr_validate_field']) ?
+          $sibling['#user_data']['islandora_authority_solr_validate_field'] :
+          NULL),
         'mapping' => drupal_array_get_nested_value($sibling['#user_data'], array('islandora_authority_mapping')),
         'search_without_dismax' => (isset($sibling['#user_data']['islandora_authority_search_without_dismax']) ?
           $sibling['#user_data']['islandora_authority_search_without_dismax'] :
@@ -140,12 +143,10 @@ function islandora_authority_get_fields($build_id, $element_hash) {
 }
 
 /**
- * Builds and executes an autocomplete query for the given element.
- *
- * @return IslandoraSolrQueryProcessor
- *   An IslandoraSolrQueryProcessor that has been built and executed.
+ * Page/autocomplete callback to grab results from Solr.
  */
-function islandora_authority_build_and_execute_autocomplete_query($build_id, $element, $fields, $string = '') {
+function islandora_authority_autocomplete($build_id, $element, $string = '') {
+  $fields = islandora_authority_get_fields($build_id, $element);
   $qp = new IslandoraSolrQueryProcessor();
   if (isset($fields['fields'][$element]['search_without_dismax'])) {
     $qp->buildQuery($fields['fields'][$element]['search_field_name'] . ":$string*");
@@ -158,15 +159,6 @@ function islandora_authority_build_and_execute_autocomplete_query($build_id, $el
   $qp->solrParams['fl'] = implode(',', array_merge((array) $fields['fl'], array('PID')));
   $qp->solrParams['fq'] = $fields['fq'];
   $qp->executeQuery(FALSE, TRUE);
-  return $qp;
-}
-
-/**
- * Page/autocomplete callback to grab results from Solr.
- */
-function islandora_authority_autocomplete($build_id, $element, $string = '') {
-  $fields = islandora_authority_get_fields($build_id, $element);
-  $qp = islandora_authority_build_and_execute_autocomplete_query($build_id, $element, $fields, $string);
   $matches = array();
   foreach ($qp->islandoraSolrResult['response']['objects'] as $object) {
     $doc = $object['solr_doc'];
@@ -180,11 +172,25 @@ function islandora_authority_autocomplete($build_id, $element, $string = '') {
  */
 function islandora_authority_validate($build_id, $element, $string = '') {
   $fields = islandora_authority_get_fields($build_id, $element);
-  $qp = islandora_authority_build_and_execute_autocomplete_query($build_id, $element, $fields, $string);
-  foreach ($qp->islandoraSolrResult['response']['objects'] as $object) {
-    $doc = $object['solr_doc'];
-    $values = $doc[$fields['fields'][$fields['current']]['search_field_name']];
-    if (in_array($string, $values)) {
+  $validate_field = isset($fields['fields'][$element]['validate_field_name']) ? $fields['fields'][$element]['validate_field_name'] : FALSE;
+  if ($validate_field) {
+    $qp = new IslandoraSolrQueryProcessor();
+    if (isset($fields['fields'][$element]['search_without_dismax'])) {
+      $qp->buildQuery($fields['fields'][$element]['search_field_name'] . ":$string*");
+    }
+    else {
+      $qp->buildQuery($string);
+      $qp->solrParams['qf'] = $fields['fields'][$element]['search_field_name'];
+      $qp->solrParams['defType'] = 'dismax';
+    }
+    $qp->solrParams['facet.limit'] = 100000;
+    $qp->solrParams['facet.mincount'] = 1;
+    $qp->solrParams['facet.query'] = array($string);
+    $qp->solrParams['facet.field'] = array($validate_field);
+    // All we actually care about here is the facet count for the given field.
+    $qp->solrLimit = 0;
+    $qp->executeQuery(FALSE, TRUE);
+    if (isset($qp->islandoraSolrResult['facet_counts']['facet_fields'][$validate_field][$string])) {
       drupal_json_output(array('match' => TRUE));
       return;
     }
