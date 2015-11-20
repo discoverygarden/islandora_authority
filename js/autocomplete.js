@@ -26,6 +26,45 @@ Drupal.behaviors.islandora_authority_autocomplete = {
 };
 
 /**
+ * Attaches the validation of autocomplete fields initially and on change.
+ */
+Drupal.behaviors.islandora_authority_autocomplete_validate = {
+  attach: function(context, settings) {
+    // Initial callback.
+    $('input.islandora-authority-autocomplete-validate', context).once('islandora-authority-autocomplete-validate', function() {
+      var input_id = this.id.substr(0, this.id.length - 43);
+      var input = $('#' + input_id);
+      $.ajax({
+        'url': this.value + "/" + input[0].value,
+        'dataType': 'json',
+        'success': function(data, textStatus, jqXHR) {
+          if (data.match) {
+            input.after($('<img class="islandora-authority-autocomplete-validate" id="' + input_id + '-check" src="' + Drupal.settings.basePath + 'misc/message-16-ok.png"/>'));
+          }
+        }
+      });
+    });
+    // Callback on element change.
+    $('input.form-autocomplete', context).change(function() {
+      var input_id = this.id;
+      $('#' + input_id + '-check').remove();
+      var validate = $('#' + input_id + '--islandora-authority-autocomplete-validate');
+      if (validate.length) {
+        $.ajax({
+          'url': validate.val() + "/" + $('#' + input_id).val(),
+          'dataType': 'json',
+          'success': function(data, textStatus, jqXHR) {
+            if (data.match) {
+              $('#' + input_id).after($('<img class="islandora-authority-autocomplete-validate" id="' + input_id + '-check" src="' + Drupal.settings.basePath + 'misc/message-16-ok.png"/>'));
+            }
+          }
+        });
+      };
+    });
+  }
+};
+
+/**
  * An AutoComplete object.
  */
 Drupal.islandora_authority_jsAC = function(input, uri) { Drupal.jsAC.call(this, input, uri); };

@@ -37,6 +37,15 @@ function theme_islandora_authority_textfield($variables) {
     $attributes['disabled'] = 'disabled';
     $attributes['class'][] = 'islandora-authority-autocomplete';
     $extra = '<input' . drupal_attributes($attributes) . ' />';
+    if (isset($element['#user_data']['islandora_authority_solr_validate_field'])) {
+      $validation_attributes = array();
+      $validation_attributes['type'] = 'hidden';
+      $validation_attributes['id'] = $element['#attributes']['id'] . '--islandora-authority-autocomplete-validate';
+      $validation_attributes['value'] = url($element['#validation_path'], array('absolute' => TRUE));
+      $validation_attributes['disabled'] = 'disabled';
+      $validation_attributes['class'][] = 'islandora-authority-autocomplete-validate';
+      $extra .= '<input' . drupal_attributes($validation_attributes) . ' />';
+    }
   }
 
   $output = '<input ' . drupal_attributes($element['#attributes']) . ' />';
@@ -62,6 +71,11 @@ function islandora_authority_element_process($element, &$form_state, $complete_f
 function islandora_authority_textfield_process($element, &$form_state, $complete_form) {
   $element['#autocomplete_path'] = implode('/', array(
     $element['#autocomplete_path'],
+    $complete_form['#build_id'],
+    $element['#hash'],
+  ));
+  $element['#validation_path'] = implode('/', array(
+    'islandora/authority-validate',
     $complete_form['#build_id'],
     $element['#hash'],
   ));

@@ -128,6 +128,9 @@ function islandora_authority_get_fields($build_id, $element_hash) {
         'display_field_name' => (!empty($sibling['#user_data']['islandora_authority_solr_display_field']) ?
           $sibling['#user_data']['islandora_authority_solr_display_field'] :
           $sibling['#user_data']['islandora_authority_solr_search_field']),
+        'validate_field_name' => (!empty($sibling['#user_data']['islandora_authority_solr_validate_field']) ?
+          $sibling['#user_data']['islandora_authority_solr_validate_field'] :
+          NULL),
         'mapping' => drupal_array_get_nested_value($sibling['#user_data'], array('islandora_authority_mapping')),
         'search_without_dismax' => (isset($sibling['#user_data']['islandora_authority_search_without_dismax']) ?
           $sibling['#user_data']['islandora_authority_search_without_dismax'] :
@@ -162,4 +165,33 @@ function islandora_authority_autocomplete($build_id, $element, $string = '') {
     $matches[$doc['PID']] = islandora_authority_build_match($doc, $fields);
   }
   drupal_json_output($matches);
+}
+
+/**
+ * Callback to validate the contents of an autocomplete field against Solr.
+ */
+function islandora_authority_validate($build_id, $element, $string = '') {
+  $fields = islandora_authority_get_fields($build_id, $element);
+  $validate_field = isset($fields['fields'][$element]['validate_field_name']) ? $fields['fields'][$element]['validate_field_name'] : FALSE;
+  if ($validate_field) {
+    $qp = new IslandoraSolrQueryProcessor();
+    if (isset($fields['fields'][$element]['search_without_dismax'])) {
+      $qp->buildQuery($fields['fields'][$element]['validate_field_name'] . ":$string*");
+    }
+    else {
+      $qp->buildQuery($string);
+      $qp->solrParams['qf'] = $fields['fields'][$element]['validate_field_name'];
+      $qp->solrParams['defType'] = 'dismax';
+    }
+    $qp->solrParams['fq'] = $fields['fq'];
+    $qp->solrParams['fl'] = array('PID');
+    // All we actually care about here is that anything shows up.
+    $qp->solrLimit = 1;
+    $qp->executeQuery(FALSE, TRUE);
+    if (!empty($qp->islandoraSolrResult['response']['objects'])) {
+      drupal_json_output(array('match' => TRUE));
+      return;
+    }
+  }
+  drupal_json_output(array('match' => FALSE));
 }
