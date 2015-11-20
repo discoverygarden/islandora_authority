@@ -188,7 +188,6 @@ function islandora_authority_validate($build_id, $element, $string = '') {
     // All we actually care about here is that anything shows up.
     $qp->solrLimit = 1;
     $qp->executeQuery(FALSE, TRUE);
-    dd($qp->islandoraSolrResult);
     if (!empty($qp->islandoraSolrResult['response']['objects'])) {
       drupal_json_output(array('match' => TRUE));
       return;
