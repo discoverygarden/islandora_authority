@@ -48,10 +48,10 @@ Drupal.behaviors.islandora_authority_autocomplete_validate = {
     $('input.form-autocomplete', context).change(function() {
       var input_id = this.id;
       $('#' + input_id + '-check').remove();
-      var validate = $('#' + input_id + '--islandora-authority-autocomplete-validate').first().get().pop();
-      if (validate !== undefined) {
+      var validate = $('#' + input_id + '--islandora-authority-autocomplete-validate');
+      if (validate) {
         $.ajax({
-          'url': validate.value + "/" + $('#' + input_id).val(),
+          'url': validate.val() + "/" + $('#' + input_id).val(),
           'dataType': 'json',
           'success': function(data, textStatus, jqXHR) {
             if (data.match) {
