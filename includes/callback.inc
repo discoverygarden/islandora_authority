@@ -183,6 +183,7 @@ function islandora_authority_validate($build_id, $element, $string = '') {
       $qp->solrParams['qf'] = $fields['fields'][$element]['search_field_name'];
       $qp->solrParams['defType'] = 'dismax';
     }
+    $qp->solrParams['fq'] = $fields['fq'];
     $qp->solrParams['facet.limit'] = 100000;
     $qp->solrParams['facet.mincount'] = 1;
     $qp->solrParams['facet.query'] = array($string);
