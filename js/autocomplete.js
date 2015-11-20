@@ -49,7 +49,7 @@ Drupal.behaviors.islandora_authority_autocomplete_validate = {
       var input_id = this.id;
       $('#' + input_id + '-check').remove();
       var validate = $('#' + input_id + '--islandora-authority-autocomplete-validate');
-      if (validate) {
+      if (validate.length) {
         $.ajax({
           'url': validate.val() + "/" + $('#' + input_id).val(),
           'dataType': 'json',

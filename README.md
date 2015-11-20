@@ -29,7 +29,7 @@ Generally, multiple `islandora_authority` elements are direct children of a comm
 
 Each contained authority element specifies:
 * `islandora_authority_solr_search_field`: A EdgeNGram'd Solr field.
-* `islandora_authority_solr_validate_field`: An optional facetable Solr field to validate the contents of the element against. This does not prevent the form from being saved; it simply provides visual feedback on form load and element change for whether the field contains an authorized value.
+* `islandora_authority_solr_validate_field`: An optional Solr field to validate the contents of the element against. This does not prevent the form from being saved; it simply provides visual feedback on form load and element change for whether the field contains an authorized value. This should _not_ be an EdgeNGram'd Solr field.
 * `islandora_authority_solr_display_field`: An optional Solr field, used for display purposes (defaults to the search field).
 * `islandora_authority_mapping`: An optional placeholder, which will make values for this field available for substitution into the `t_pattern` above.
 

@@ -176,22 +176,20 @@ function islandora_authority_validate($build_id, $element, $string = '') {
   if ($validate_field) {
     $qp = new IslandoraSolrQueryProcessor();
     if (isset($fields['fields'][$element]['search_without_dismax'])) {
-      $qp->buildQuery($fields['fields'][$element]['search_field_name'] . ":$string*");
+      $qp->buildQuery($fields['fields'][$element]['validate_field_name'] . ":$string*");
     }
     else {
       $qp->buildQuery($string);
-      $qp->solrParams['qf'] = $fields['fields'][$element]['search_field_name'];
+      $qp->solrParams['qf'] = $fields['fields'][$element]['validate_field_name'];
       $qp->solrParams['defType'] = 'dismax';
     }
     $qp->solrParams['fq'] = $fields['fq'];
-    $qp->solrParams['facet.limit'] = 100000;
-    $qp->solrParams['facet.mincount'] = 1;
-    $qp->solrParams['facet.query'] = array($string);
-    $qp->solrParams['facet.field'] = array($validate_field);
-    // All we actually care about here is the facet count for the given field.
-    $qp->solrLimit = 0;
+    $qp->solrParams['fl'] = array('PID');
+    // All we actually care about here is that anything shows up.
+    $qp->solrLimit = 1;
     $qp->executeQuery(FALSE, TRUE);
-    if (isset($qp->islandoraSolrResult['facet_counts']['facet_fields'][$validate_field][$string])) {
+    dd($qp->islandoraSolrResult);
+    if (!empty($qp->islandoraSolrResult['response']['objects'])) {
       drupal_json_output(array('match' => TRUE));
       return;
     }
