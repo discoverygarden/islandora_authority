@@ -39,7 +39,7 @@ Drupal.behaviors.islandora_authority_autocomplete_validate = {
         'dataType': 'json',
         'success': function(data, textStatus, jqXHR) {
           if (data.match) {
-            input.after($('<img id="' + input_id + '-check" src="' + Drupal.settings.baseUrl + '/misc/message-16-ok.png"/>'));
+            input.after($('<img class="islandora-authority-autocomplete-validate" id="' + input_id + '-check" src="' + Drupal.settings.basePath + 'misc/message-16-ok.png"/>'));
           }
         }
       });
@@ -55,7 +55,7 @@ Drupal.behaviors.islandora_authority_autocomplete_validate = {
           'dataType': 'json',
           'success': function(data, textStatus, jqXHR) {
             if (data.match) {
-              $('#' + input_id).after($('<img id="' + input_id + '-check" src="' + Drupal.settings.baseUrl + '/misc/message-16-ok.png"/>'));
+              $('#' + input_id).after($('<img class="islandora-authority-autocomplete-validate" id="' + input_id + '-check" src="' + Drupal.settings.basePath + 'misc/message-16-ok.png"/>'));
             }
           }
         });
