@@ -74,12 +74,10 @@ function islandora_authority_textfield_process($element, &$form_state, $complete
     $complete_form['#build_id'],
     $element['#hash'],
   ));
-  if (variable_get('islandora_authority_validate_fields', FALSE)) {
-    $element['#validation_path'] = implode('/', array(
-      'islandora/authority-validate',
-      $complete_form['#build_id'],
-      $element['#hash'],
-    ));
-  }
+  $element['#validation_path'] = implode('/', array(
+    'islandora/authority-validate',
+    $complete_form['#build_id'],
+    $element['#hash'],
+  ));
   return $element;
 }
