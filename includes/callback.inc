@@ -146,14 +146,20 @@ function islandora_authority_get_fields($build_id, $element_hash) {
  * Page/autocomplete callback to grab results from Solr.
  */
 function islandora_authority_autocomplete($build_id, $element, $string = '') {
+  module_load_include('inc', 'islandora_solr', 'includes/utilities');
   $fields = islandora_authority_get_fields($build_id, $element);
   $qp = new IslandoraSolrQueryProcessor();
+  $escaped_string = islandora_solr_lesser_escape($string);
+  $escaped_field = islandora_solr_lesser_escape($fields['fields'][$element]['search_field_name']);
   if (isset($fields['fields'][$element]['search_without_dismax'])) {
-    $qp->buildQuery($fields['fields'][$element]['search_field_name'] . ":$string*");
+    $qp->buildQuery(format_string('!field:(!value*)', array(
+      '!field' => $escaped_field,
+      '!value' => $escaped_string,
+    )));
   }
   else {
-    $qp->buildQuery($string);
-    $qp->solrParams['qf'] = $fields['fields'][$element]['search_field_name'];
+    $qp->buildQuery($escaped_string);
+    $qp->solrParams['qf'] = $escaped_field;
     $qp->solrParams['defType'] = 'dismax';
   }
   $qp->solrParams['fl'] = implode(',', array_merge((array) $fields['fl'], array('PID')));
@@ -175,23 +181,17 @@ function islandora_authority_validate($build_id, $element, $string = '') {
   $validate_field = isset($fields['fields'][$element]['validate_field_name']) ? $fields['fields'][$element]['validate_field_name'] : FALSE;
   if ($validate_field) {
     $qp = new IslandoraSolrQueryProcessor();
-    if (isset($fields['fields'][$element]['search_without_dismax'])) {
-      $qp->buildQuery($fields['fields'][$element]['validate_field_name'] . ":$string*");
-    }
-    else {
-      $qp->buildQuery($string);
-      $qp->solrParams['qf'] = $fields['fields'][$element]['validate_field_name'];
-      $qp->solrParams['defType'] = 'dismax';
-    }
+    module_load_include('inc', 'islandora_solr', 'includes/utilities');
+    $qp->buildQuery(format_string('!field:"!value"', array(
+      '!field' => islandora_solr_lesser_escape($fields['fields'][$element]['validate_field_name']),
+      '!value' => islandora_solr_lesser_escape($string),
+    )));
     $qp->solrParams['fq'] = $fields['fq'];
-    $qp->solrParams['fl'] = array('PID');
-    // All we actually care about here is that anything shows up.
-    $qp->solrLimit = 1;
+    $qp->solrLimit = 0;
     $qp->executeQuery(FALSE, TRUE);
-    if (!empty($qp->islandoraSolrResult['response']['objects'])) {
-      drupal_json_output(array('match' => TRUE));
-      return;
-    }
+    // All we actually care about here is that anything shows up.
+    drupal_json_output(array('match' => $qp->islandoraSolrResult['response']['numFound'] > 0));
+    return;
   }
-  drupal_json_output(array('match' => FALSE));
+  drupal_json_output(array('match' => NULL));
 }

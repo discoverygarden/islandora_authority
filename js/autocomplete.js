@@ -44,8 +44,9 @@ Drupal.behaviors.islandora_authority_autocomplete_validate = {
         }
       });
     });
+
     // Callback on element change.
-    $('input.form-autocomplete', context).change(function() {
+    $('input.form-autocomplete', context).once('islandora-authority-validating-autocomplete').change(function() {
       var input_id = this.id;
       $('#' + input_id + '-check').remove();
       var validate = $('#' + input_id + '--islandora-authority-autocomplete-validate');
@@ -59,7 +60,7 @@ Drupal.behaviors.islandora_authority_autocomplete_validate = {
             }
           }
         });
-      };
+      }
     });
   }
 };
