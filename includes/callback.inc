@@ -149,16 +149,15 @@ function islandora_authority_autocomplete($build_id, $element, $string = '') {
   module_load_include('inc', 'islandora_solr', 'includes/utilities');
   $fields = islandora_authority_get_fields($build_id, $element);
   $qp = new IslandoraSolrQueryProcessor();
-  $escaped_string = islandora_solr_lesser_escape($string);
   $escaped_field = islandora_solr_lesser_escape($fields['fields'][$element]['search_field_name']);
   if (isset($fields['fields'][$element]['search_without_dismax'])) {
     $qp->buildQuery(format_string('!field:(!value*)', array(
       '!field' => $escaped_field,
-      '!value' => $escaped_string,
+      '!value' => $string,
     )));
   }
   else {
-    $qp->buildQuery($escaped_string);
+    $qp->buildQuery($string);
     $qp->solrParams['qf'] = $escaped_field;
     $qp->solrParams['defType'] = 'dismax';
   }
@@ -184,7 +183,7 @@ function islandora_authority_validate($build_id, $element, $string = '') {
     module_load_include('inc', 'islandora_solr', 'includes/utilities');
     $qp->buildQuery(format_string('!field:"!value"', array(
       '!field' => islandora_solr_lesser_escape($fields['fields'][$element]['validate_field_name']),
-      '!value' => islandora_solr_lesser_escape($string),
+      '!value' => islandora_solr_facet_escape($string),
     )));
     $qp->solrParams['fq'] = $fields['fq'];
     $qp->solrLimit = 0;
