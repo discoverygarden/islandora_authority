@@ -175,23 +175,17 @@ function islandora_authority_validate($build_id, $element, $string = '') {
   $validate_field = isset($fields['fields'][$element]['validate_field_name']) ? $fields['fields'][$element]['validate_field_name'] : FALSE;
   if ($validate_field) {
     $qp = new IslandoraSolrQueryProcessor();
-    if (isset($fields['fields'][$element]['search_without_dismax'])) {
-      $qp->buildQuery($fields['fields'][$element]['validate_field_name'] . ":$string*");
-    }
-    else {
-      $qp->buildQuery($string);
-      $qp->solrParams['qf'] = $fields['fields'][$element]['validate_field_name'];
-      $qp->solrParams['defType'] = 'dismax';
-    }
+    module_load_include('inc', 'islandora_solr', 'includes/utilities');
+    $qp->buildQuery(format_string('!field:"!value"', array(
+      '!field' => islandora_solr_lesser_escape($fields['fields'][$element]['validate_field_name']),
+      '!value' => $string,
+    )));
     $qp->solrParams['fq'] = $fields['fq'];
-    $qp->solrParams['fl'] = array('PID');
-    // All we actually care about here is that anything shows up.
-    $qp->solrLimit = 1;
+    $qp->solrLimit = 0;
     $qp->executeQuery(FALSE, TRUE);
-    if (!empty($qp->islandoraSolrResult['response']['objects'])) {
-      drupal_json_output(array('match' => TRUE));
-      return;
-    }
+    // All we actually care about here is that anything shows up.
+    drupal_json_output(array('match' => $qp->islandoraSolrResult['response']['numFound'] > 0));
+    return;
   }
-  drupal_json_output(array('match' => FALSE));
+  drupal_json_output(array('match' => NULL));
 }
