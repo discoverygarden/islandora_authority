@@ -178,7 +178,7 @@ function islandora_authority_validate($build_id, $element, $string = '') {
     module_load_include('inc', 'islandora_solr', 'includes/utilities');
     $qp->buildQuery(format_string('!field:"!value"', array(
       '!field' => islandora_solr_lesser_escape($fields['fields'][$element]['validate_field_name']),
-      '!value' => $string,
+      '!value' => islandora_solr_lesser_escape($string),
     )));
     $qp->solrParams['fq'] = $fields['fq'];
     $qp->solrLimit = 0;
