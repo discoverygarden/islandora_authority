@@ -146,14 +146,20 @@ function islandora_authority_get_fields($build_id, $element_hash) {
  * Page/autocomplete callback to grab results from Solr.
  */
 function islandora_authority_autocomplete($build_id, $element, $string = '') {
+  module_load_include('inc', 'islandora_solr', 'includes/utilities');
   $fields = islandora_authority_get_fields($build_id, $element);
   $qp = new IslandoraSolrQueryProcessor();
+  $escaped_string = islandora_solr_lesser_escape($string);
+  $escaped_field = islandora_solr_lesser_escape($fields['fields'][$element]['search_field_name']);
   if (isset($fields['fields'][$element]['search_without_dismax'])) {
-    $qp->buildQuery($fields['fields'][$element]['search_field_name'] . ":$string*");
+    $qp->buildQuery(format_string('!field:(!value*)', array(
+      '!field' => $escaped_field,
+      '!value' => $escaped_string,
+    )));
   }
   else {
-    $qp->buildQuery($string);
-    $qp->solrParams['qf'] = $fields['fields'][$element]['search_field_name'];
+    $qp->buildQuery($escaped_string);
+    $qp->solrParams['qf'] = $escaped_field;
     $qp->solrParams['defType'] = 'dismax';
   }
   $qp->solrParams['fl'] = implode(',', array_merge((array) $fields['fl'], array('PID')));
