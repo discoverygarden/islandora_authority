@@ -32,7 +32,7 @@ Each contained authority element specifies:
 * `islandora_authority_solr_validate_field`: An optional Solr field to validate the contents of the element against. This does not prevent the form from being saved; it simply provides visual feedback on form load and element change for whether the field contains an authorized value. This should be an untokenized Solr field.
 * `islandora_authority_solr_display_field`: An optional Solr field, used for display purposes (defaults to the search field).
 * `islandora_authority_mapping`: An optional placeholder, which will make values for this field available for substitution into the `t_pattern` above.
-* `islandora_authority_search_without_dismax`: A flag which should be set (to "true") when `islandora_authority_solr_search_field` is not an EdgeNGram'd Solr field, so queries will be made as (non-dismax) prefix queries instead of depending on the behaviour of EdgeNGrams. Note that EdgeNGrams are more predicatable in the results they return; prefix/wildcard queries skip analysis, so indexing analysis can result in false-negatives.
+* `islandora_authority_search_without_dismax`: A flag which should be set (to "true") when `islandora_authority_solr_search_field` is not an EdgeNGram'd Solr field, so queries will be made as (non-dismax) prefix queries instead of depending on the behaviour of EdgeNGrams. Note that EdgeNGrams are more predicatable in the results they return; prefix/wildcard queries [skip analysis](https://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters#Analyzers), so indexing analysis can result in false-negatives.
 
 ## Troubleshooting/Issues
 
