@@ -96,3 +96,9 @@ function islandora_authority_load_theme_file($element, &$form_state, $complete_f
   form_load_include($form_state, 'inc', 'islandora_authority', 'theme/theme');
   return $element;
 }
+
+function islandora_authority_controllers() {
+  return array(
+    IslandoraAuthoritySolrController::NAME => 'IslandoraAuthoritySolrController',
+  );
+}
