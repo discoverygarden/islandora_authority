@@ -23,7 +23,12 @@ Install as usual, see [this](https://drupal.org/documentation/install/modules-th
 
 Our configuration is stored in `#user_data` on our `islandora_authority_textfield` and `islandora_authority_hidden` elements.
 
-Generally, multiple `islandora_authority` elements are direct children of a common parent. The parent currently has two parameters:
+Generally, multiple `islandora_authority` elements are direct children of a common parent. The framework defines a single parameter on the parent:
+* `islandora_authority_controller`: A machine name indicating the controller to use.
+
+### Solr Controller
+
+The Solr controller defines two parameters on the parent element:
 * `islandora_authority_t_pattern`:  A pattern as used by Drupal's `format_string()`/`t()` function.
 * `islandora_authority_fq`: A list of tilde-separated Lucene statements, e.g.: `PID:ir*`, to ensure all results come from the IR namespace. (Note: separating is done via a naive explode; tildes in values break it)
 
