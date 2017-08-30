@@ -5,6 +5,9 @@
  * Solr search controller.
  */
 
+/**
+ * Solr search controller.
+ */
 class IslandoraAuthoritySolrController extends IslandoraAuthorityAbstractController {
   const NAME = 'solr';
 
@@ -15,12 +18,17 @@ class IslandoraAuthoritySolrController extends IslandoraAuthorityAbstractControl
    */
   protected $fieldInfo;
 
-  public function __construct($build_id, $element_hash) {
-    parent::__construct($build_id, $element_hash);
+  /**
+   * Constructor.
+   *
+   * Additionally performs a bit of configuration parsing.
+   */
+  public function __construct(FormElement $element) {
+    parent::__construct($element);
 
     $this->fieldInfo = array(
       'pattern' => $this->parent->user_data['islandora_authority_t_pattern'],
-      'current' => $element_hash,
+      'current' => $this->elementHash,
       'fl' => array(),
       'fq' => (isset($this->parent->user_data['islandora_authority_fq']) ?
         explode('~', $this->parent->user_data['islandora_authority_fq']) :
@@ -85,8 +93,10 @@ class IslandoraAuthoritySolrController extends IslandoraAuthorityAbstractControl
    *   An associative array representing a result from Solr.
    *
    * @return array
+   *   The array for a particular value, as returned from
+   *   IslandoraAuthorityAbstractController::search().
    */
-  protected function buildMatch($solr_doc) {
+  protected function buildMatch(array $solr_doc) {
     // An associative array mapping Solr field names to format_string()
     // placeholders.
     $map = array();
@@ -117,8 +127,9 @@ class IslandoraAuthoritySolrController extends IslandoraAuthorityAbstractControl
         $count = count($field);
         $pad_value = '';
         if ($count == 1) {
-          // If there happens to be only a single value, assume that it should be
-          // repeated for each: associating the PID with each result, for example.
+          // If there happens to be only a single value, assume that it should
+          // be repeated for each: associating the PID with each result, for
+          // example.
           $pad_value = end($field);
         }
         $field = array_pad($field, $max_count, $pad_value);
@@ -147,4 +158,5 @@ class IslandoraAuthoritySolrController extends IslandoraAuthorityAbstractControl
     }
     return $to_return;
   }
+
 }

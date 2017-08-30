@@ -5,11 +5,14 @@
  * Abstract controller class.
  */
 
+/**
+ * Abstract base controller implementation.
+ */
 abstract class IslandoraAuthorityAbstractController {
   const NAME = 'abstract';
 
   /**
-   * The element hash of the target element.
+   * The element hash of the target element (convenience).
    *
    * @var string
    */
@@ -33,13 +36,30 @@ abstract class IslandoraAuthorityAbstractController {
 
   /**
    * Constructor.
+   *
+   * @param FormElement $element
+   *   An objective forms instance of the target element.
    */
-  public function __construct($element_hash, $element) {
-    $this->elementHash = $element_hash;
+  public function __construct(FormElement $element) {
+    $this->elementHash = $element->hash;
     $this->element = $element;
     $this->parent = $this->element->parent;
   }
 
+  /**
+   * Factory function; instantiate the correct controller.
+   *
+   * @param string $build_id
+   *   A form build ID, so we can grab the relevant info from the form cache.
+   * @param string $element_hash
+   *   An objective forms element hash, so we can identify the target element
+   *   and its associated elements.
+   *
+   * @return IslandoraAuthorityAbstractController
+   *   An instance of a subclass, as indicated by the element's
+   *   #user_data/islandora_authority_controller value; defaults to the "solr"
+   *   controller.
+   */
   public static function create($build_id, $element_hash) {
     $form_state = form_state_defaults();
     $form = form_get_cache($build_id, $form_state);
@@ -47,6 +67,7 @@ abstract class IslandoraAuthorityAbstractController {
     $obj_form = new Form($form, $form_state);
     $element = $obj_form->findElement($element_hash);
 
+    // Default to the Solr controller, so existing forms continue to work.
     $controller = isset($element->user_data['islandora_authority_controller']) ?
       $element->user_data['islandora_authority_controller'] :
       IslandoraAuthoritySolrController::NAME;
@@ -54,10 +75,14 @@ abstract class IslandoraAuthorityAbstractController {
     $controllers = module_invoke_all('islandora_authority_controllers');
     $class = $controllers[$controller];
 
-    return new $class(
-      $element_hash,
-      $element
-    );
+    if (!is_subclass_of($class, __CLASS__)) {
+      throw new UnexpectedValueException(t('The controller identified by @name does not appear to be a subclass of @class.', array(
+        '@name' => $controller,
+        '@class' => __CLASS__,
+      )));
+    }
+
+    return new $class($element);
   }
 
   /**
@@ -84,11 +109,12 @@ abstract class IslandoraAuthorityAbstractController {
    * @param string $string
    *   The string being validated.
    *
-   * @return bool|NULL
+   * @return bool|null
    *   TRUE if the value appears to be valid; otherwise, FALSE. NULL if
    *   validation is not configured for this field.
    */
   public function validate($string) {
     return NULL;
   }
+
 }
