@@ -57,8 +57,18 @@ class IslandoraAuthorityOCLCFastController extends IslandoraAuthoritySolrControl
         'sort' => 'score desc',
       ),
     )));
+
+    // XXX: The endpoint presently returns 200 with an empty body for bad
+    // requests... so in addition to the 200 check, let's also check for the
+    // body being empty as an error condition.
+    if ($response->code / 100 !== 2 || !$response->headers['content-length']) {
+      watchdog('islandora_authority_oclc_fast', 'Search for term "@term" failed.', array('@term' => $string));
+      return array('invalid' => array('full-display' => t('Invalid string for autocomplete: "@string"', array(
+        '@string' => $string,
+      ))));
+    }
+
     $matches = array();
-    dsm($response->data);
     foreach (drupal_json_decode($response->data)['response']['docs'] as $doc) {
       foreach ($pseudo_field_info as $name => $info) {
         // XXX: Add our pseudo-field(s).
