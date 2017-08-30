@@ -18,11 +18,10 @@ Install as usual, see [this](https://drupal.org/documentation/install/modules-th
 
 Machine name: `oclc_fast`
 
-This controller uses an adapted subset of Solr controllers configuration.
+This controller uses a much reduced and adapted subset of Solr controllers configuration.
 
 The parent element accepts:
 * `islandora_authority_t_pattern`:  A pattern as used by Drupal's `format_string()`/`t()` function.
-* `islandora_authority_fq`: A list of tilde-separated Lucene statements, e.g.: `PID:ir*`, to ensure all results come from the IR namespace. (Note: separating is done via a naive explode; tildes in values break it)
 * `islandora_authority_oclc_fast_index`: The name of the query index against which to query. See the [endpoint's "Query Indicies" table](http://www.oclc.org/developer/develop/web-services/fast-api/assign-fast.en.html) for a list of those available.
 
 Each contained authority element specifies:
