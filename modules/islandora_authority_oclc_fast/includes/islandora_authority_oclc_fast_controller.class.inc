@@ -60,8 +60,8 @@ class IslandoraAuthorityOCLCFastController extends IslandoraAuthoritySolrControl
 
     // XXX: The endpoint presently returns 200 with an empty body for bad
     // requests... so in addition to the 200 check, let's also check for the
-    // body being empty as an error condition.
-    if ($response->code / 100 !== 2 || !$response->headers['content-length']) {
+    // body being empty as an error condition...
+    if ($response->code / 100 !== 2 || !$response->data) {
       watchdog('islandora_authority_oclc_fast', 'Search for term "@term" failed.', array('@term' => $string));
       return array(
         'invalid' => array(
