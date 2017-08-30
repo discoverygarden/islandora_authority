@@ -67,7 +67,7 @@ class IslandoraAuthoritySolrController extends IslandoraAuthorityAbstractControl
       $qp->solrParams['defType'] = 'dismax';
     }
     $qp->solrParams['fl'] = implode(',', array_merge((array) $this->fieldInfo['fl'], array('PID')));
-    $qp->solrParams['fq'] = $fields['fq'];
+    $qp->solrParams['fq'] = $this->fieldInfo['fq'];
     $qp->executeQuery(FALSE, TRUE);
     $matches = array();
     foreach ($qp->islandoraSolrResult['response']['objects'] as $object) {

@@ -9,9 +9,9 @@
  * Page/autocomplete callback to grab results from Solr.
  */
 function islandora_authority_autocomplete($build_id, $element, $string = '') {
-  drupal_json_output(array(
-    'match' => IslandoraAuthorityAbstractController::create($build_id, $element)->search($string),
-  ));
+  drupal_json_output(
+    IslandoraAuthorityAbstractController::create($build_id, $element)->search($string)
+  );
   return;
 }
 

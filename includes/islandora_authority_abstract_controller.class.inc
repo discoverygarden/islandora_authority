@@ -47,13 +47,12 @@ abstract class IslandoraAuthorityAbstractController {
     $obj_form = new Form($form, $form_state);
     $element = $obj_form->findElement($element_hash);
 
-    $controller = $element->user_data['islandora_authority_controller'];
-    if (!$controller) {
-      // Default to the Solr controller.
-      $controller = IslandoraAuthoritySolrController::NAME;
-    }
+    $controller = isset($element->user_data['islandora_authority_controller']) ?
+      $element->user_data['islandora_authority_controller'] :
+      IslandoraAuthoritySolrController::NAME;
 
-    $class = module_invoke_all('islandora_authority_controllers')[$controller];
+    $controllers = module_invoke_all('islandora_authority_controllers');
+    $class = $controllers[$controller];
 
     return new $class(
       $element_hash,
@@ -77,7 +76,7 @@ abstract class IslandoraAuthorityAbstractController {
    *   And additional keys representing element hashes mapped to values the
    *   relevant elements should recieve.
    */
-  public function search($string);
+  abstract public function search($string);
 
   /**
    * Validate a string in the current field.
@@ -89,5 +88,7 @@ abstract class IslandoraAuthorityAbstractController {
    *   TRUE if the value appears to be valid; otherwise, FALSE. NULL if
    *   validation is not configured for this field.
    */
-  public function validate($string);
+  public function validate($string) {
+    return NULL;
+  }
 }
