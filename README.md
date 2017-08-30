@@ -24,7 +24,7 @@ Install as usual, see [this](https://drupal.org/documentation/install/modules-th
 Our configuration is stored in `#user_data` on our `islandora_authority_textfield` and `islandora_authority_hidden` elements.
 
 Generally, multiple `islandora_authority` elements are direct children of a common parent. The framework defines a single parameter on the parent:
-* `islandora_authority_controller`: A machine name indicating the controller to use.
+* `islandora_authority_controller`: A machine name indicating the controller to use. Defaults to `solr` if otherwise unspecified.
 
 ### Solr Controller
 
