@@ -10,7 +10,7 @@
  */
 function islandora_authority_autocomplete($build_id, $element, $string = '') {
   drupal_json_output(
-    IslandoraAuthorityAbstractController::create($build_id, $element)->search($string)
+    IslandoraAuthorityAbstractController::createFromBuildAndHash($build_id, $element)->search($string)
   );
 }
 
@@ -19,6 +19,6 @@ function islandora_authority_autocomplete($build_id, $element, $string = '') {
  */
 function islandora_authority_validate($build_id, $element, $string = '') {
   drupal_json_output(array(
-    'match' => IslandoraAuthorityAbstractController::create($build_id, $element)->validate($string),
+    'match' => IslandoraAuthorityAbstractController::createFromBuildAndHash($build_id, $element)->validate($string),
   ));
 }

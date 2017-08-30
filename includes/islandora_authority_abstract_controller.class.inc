@@ -60,9 +60,30 @@ abstract class IslandoraAuthorityAbstractController {
    *   #user_data/islandora_authority_controller value; defaults to the "solr"
    *   controller.
    */
-  public static function create($build_id, $element_hash) {
+  public static function createFromBuildAndHash($build_id, $element_hash) {
     $form_state = form_state_defaults();
     $form = form_get_cache($build_id, $form_state);
+
+    return static::createFromFormAndState($element_hash, $form, $form_state);
+  }
+
+  /**
+   * Factory function; instantiate the correct controller.
+   *
+   * @param string $element_hash
+   *   An objective forms element hash, so we can identify the target element
+   *   and its associated elements.
+   * @param array $form
+   *   The form structure being manipulated.
+   * @param array $form_state
+   *   The form state of the target form.
+   *
+   * @return IslandoraAuthorityAbstractController
+   *   An instance of a subclass, as indicated by the element's
+   *   #user_data/islandora_authority_controller value; defaults to the "solr"
+   *   controller.
+   */
+  public static function createFromFormAndState($element_hash, array $form, array $form_state) {
     module_load_include('inc', 'objective_forms', 'Form');
     $obj_form = new Form($form, $form_state);
     $element = $obj_form->findElement($element_hash);
@@ -117,4 +138,13 @@ abstract class IslandoraAuthorityAbstractController {
     return NULL;
   }
 
+  /**
+   * Determine if the given field should run through the validation process.
+   *
+   * @return bool
+   *   TRUE if it should; otherwise, FALSE.
+   */
+  public function fieldHasValidation() {
+    return FALSE;
+  }
 }

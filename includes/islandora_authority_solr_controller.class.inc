@@ -99,6 +99,25 @@ class IslandoraAuthoritySolrController extends IslandoraAuthorityAbstractControl
   }
 
   /**
+   * {@inheritdoc}
+   */
+  public function validate($string) {
+    if (isset($this->fieldInfo['fields'][$this->elementHash]['validate_field_name'])) {
+      $qp = new IslandoraSolrQueryProcessor();
+      module_load_include('inc', 'islandora_solr', 'includes/utilities');
+      $qp->buildQuery(format_string('!field:"!value"', array(
+        '!field' => islandora_solr_lesser_escape($this->fieldInfo['fields'][$this->elementHash]['validate_field_name']),
+        '!value' => islandora_solr_facet_escape($string),
+      )));
+      $qp->solrParams['fq'] = $this->fieldInfo['fq'];
+      $qp->solrLimit = 0;
+      $qp->executeQuery(FALSE, TRUE);
+      return $qp->islandoraSolrResult['response']['numFound'] > 0;
+    }
+    return NULL;
+  }
+
+  /**
    * Helper; transform a Solr document into what we need.
    *
    * @param array $solr_doc
@@ -171,4 +190,10 @@ class IslandoraAuthoritySolrController extends IslandoraAuthorityAbstractControl
     return $to_return;
   }
 
+  /**
+   * {@inheritDoc}
+   */
+  public function fieldHasValidation() {
+    return isset($this->fieldInfo['fields'][$this->elementHash]['validate_field_name']);
+  }
 }

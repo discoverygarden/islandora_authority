@@ -114,4 +114,12 @@ class IslandoraAuthorityOCLCFastController extends IslandoraAuthoritySolrControl
   public function validate($string) {
     return NULL;
   }
+
+  /**
+   * {@inheritDoc}
+   */
+  public function fieldHasValidation() {
+    return FALSE;
+  }
+
 }
