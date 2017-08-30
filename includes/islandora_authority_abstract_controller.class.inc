@@ -68,8 +68,8 @@ abstract class IslandoraAuthorityAbstractController {
     $element = $obj_form->findElement($element_hash);
 
     // Default to the Solr controller, so existing forms continue to work.
-    $controller = isset($element->user_data['islandora_authority_controller']) ?
-      $element->user_data['islandora_authority_controller'] :
+    $controller = isset($element->parent->user_data['islandora_authority_controller']) ?
+      $element->parent->user_data['islandora_authority_controller'] :
       IslandoraAuthoritySolrController::NAME;
 
     $controllers = module_invoke_all('islandora_authority_controllers');

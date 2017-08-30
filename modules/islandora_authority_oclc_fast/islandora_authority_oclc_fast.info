@@ -1,0 +1,7 @@
+name = Islandora Authority OCLC Provider
+description = Offers autocompletion and the creation of relations to authoritative records from OCLC's FAST endpoint.
+dependencies[] = islandora_authority
+package = Islandora Tools
+version = 7.x-dev
+core = 7.x
+files[] = includes/islandora_authority_oclc_fast_controller.class.inc

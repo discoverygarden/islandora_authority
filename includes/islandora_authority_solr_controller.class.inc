@@ -25,8 +25,18 @@ class IslandoraAuthoritySolrController extends IslandoraAuthorityAbstractControl
    */
   public function __construct(FormElement $element) {
     parent::__construct($element);
+    $this->fieldInfo = $this->parseConfig();
 
-    $this->fieldInfo = array(
+  }
+
+  /**
+   * Helper to perform a bit of gather/parsing of configuration.
+   *
+   * @return array
+   *   An array which will be throwing into the $fieldInfo member variable.
+   */
+  protected function parseConfig() {
+    $config = array(
       'pattern' => $this->parent->user_data['islandora_authority_t_pattern'],
       'current' => $this->elementHash,
       'fl' => array(),
@@ -38,7 +48,7 @@ class IslandoraAuthoritySolrController extends IslandoraAuthorityAbstractControl
     $element_types = module_invoke('islandora_authority', 'element_info');
     foreach ($this->parent->toArray() as $sibling) {
       if (is_array($sibling) && isset($sibling['#type']) && array_key_exists($sibling['#type'], $element_types)) {
-        $this->fieldInfo['fields'][$sibling['#hash']] = array_filter(array(
+        $config['fields'][$sibling['#hash']] = array_filter(array(
           'search_field_name' => $sibling['#user_data']['islandora_authority_solr_search_field'],
           'display_field_name' => (!empty($sibling['#user_data']['islandora_authority_solr_display_field']) ?
             $sibling['#user_data']['islandora_authority_solr_display_field'] :
@@ -51,9 +61,11 @@ class IslandoraAuthoritySolrController extends IslandoraAuthorityAbstractControl
             $sibling['#user_data']['islandora_authority_search_without_dismax'] :
             FALSE),
         ));
-        $this->fieldInfo['fl'][] = $this->fieldInfo['fields'][$sibling['#hash']]['display_field_name'];
+        $config['fl'][] = $config['fields'][$sibling['#hash']]['display_field_name'];
       }
     }
+
+    return $config;
   }
 
   /**
