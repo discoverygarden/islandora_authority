@@ -28,6 +28,10 @@ Generally, multiple `islandora_authority` elements are direct children of a comm
 
 ### Solr Controller
 
+Machine name: `solr`
+
+This controller is attempted if no other is specified.
+
 The Solr controller defines two parameters on the parent element:
 * `islandora_authority_t_pattern`:  A pattern as used by Drupal's `format_string()`/`t()` function.
 * `islandora_authority_fq`: A list of tilde-separated Lucene statements, e.g.: `PID:ir*`, to ensure all results come from the IR namespace. (Note: separating is done via a naive explode; tildes in values break it)
@@ -41,10 +45,8 @@ Each contained authority element specifies:
 
 ## Troubleshooting/Issues
 
-Having problems or solved a problem? Check out the Islandora google groups for a solution.
-
-* [Islandora Group](https://groups.google.com/forum/?hl=en&fromgroups#!forum/islandora)
-* [Islandora Dev Group](https://groups.google.com/forum/?hl=en&fromgroups#!forum/islandora-dev)
+Having problems or solved a problem? Contact
+[discoverygarden](http://support.discoverygarden.ca).
 
 ## Maintainers/Sponsors
 
@@ -55,8 +57,6 @@ Current maintainers:
 ## Development
 
 If you would like to contribute to this module, please check out our helpful [Documentation for Developers](https://github.com/Islandora/islandora/wiki#wiki-documentation-for-developers) info, as well as our [Developers](http://islandora.ca/developers) section on the Islandora.ca site.
-
-Also include any Travis gotcha's here.
 
 ## License
 

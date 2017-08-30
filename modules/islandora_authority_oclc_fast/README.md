@@ -36,8 +36,13 @@ Each contained authority element specifies:
     * `indicator`
 
     For convenience, we additionally generate:
-    * `idroot_uri`, returning a URL to the given result.
+    * `idroot_uri`, returning a URL for the given result.
 * `islandora_authority_mapping`: An optional placeholder, which will make values for this field available for substitution into the `t_pattern` above.
+
+## Troubleshooting/Issues
+
+Having problems or solved a problem? Contact
+[discoverygarden](http://support.discoverygarden.ca).
 
 ## Maintainers/Sponsors
 
