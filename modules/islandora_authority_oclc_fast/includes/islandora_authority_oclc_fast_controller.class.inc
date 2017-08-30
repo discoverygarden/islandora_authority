@@ -63,9 +63,13 @@ class IslandoraAuthorityOCLCFastController extends IslandoraAuthoritySolrControl
     // body being empty as an error condition.
     if ($response->code / 100 !== 2 || !$response->headers['content-length']) {
       watchdog('islandora_authority_oclc_fast', 'Search for term "@term" failed.', array('@term' => $string));
-      return array('invalid' => array('full-display' => t('Invalid string for autocomplete: "@string"', array(
-        '@string' => $string,
-      ))));
+      return array(
+        'invalid' => array(
+          'full-display' => t('Invalid string for autocomplete: "@string"', array(
+            '@string' => $string,
+          )),
+        ),
+      );
     }
 
     $matches = array();
@@ -81,6 +85,11 @@ class IslandoraAuthorityOCLCFastController extends IslandoraAuthoritySolrControl
   }
 
   /**
+   * Define some generated fields.
+   *
+   * For convenience, allow some additional "fields" to be generated, based of
+   * other values.
+   *
    * @param array $fields
    *   A reference to the fields being returned in the present response. If any
    *   pseudo-fields are referenced but missing requirements, we'll add in the
@@ -90,10 +99,11 @@ class IslandoraAuthorityOCLCFastController extends IslandoraAuthoritySolrControl
    *   An associative array mapping pseudo-field to information about their
    *   generation, including:
    *   - requires: An array of fields in the result which are required for this
-   *     field to be generated.
-   *   accepting the associative array representing the Solr result from 
+   *     field to be generated. Can _not_ be transitive.
+   *   - callable: A callable accepting the associative array representing the
+   *     result from which to generate the pseudo-field.
    */
-  protected function pseudoFieldInfo(&$fields) {
+  protected function pseudoFieldInfo(array &$fields) {
     $info = array(
       static::ID_FIELD . '_uri' => array(
         'requires' => array(
@@ -101,7 +111,7 @@ class IslandoraAuthorityOCLCFastController extends IslandoraAuthoritySolrControl
         ),
         'callable' => function (array $doc) {
           return format_string('http://experimental.worldcat.org/fast/!id', array(
-             '!id' => $doc[static::ID_FIELD],
+            '!id' => $doc[static::ID_FIELD],
           ));
         },
       ),
@@ -126,7 +136,7 @@ class IslandoraAuthorityOCLCFastController extends IslandoraAuthoritySolrControl
   }
 
   /**
-   * {@inheritDoc}
+   * {@inheritdoc}
    */
   public function fieldHasValidation() {
     return FALSE;

@@ -191,9 +191,10 @@ class IslandoraAuthoritySolrController extends IslandoraAuthorityAbstractControl
   }
 
   /**
-   * {@inheritDoc}
+   * {@inheritdoc}
    */
   public function fieldHasValidation() {
     return isset($this->fieldInfo['fields'][$this->elementHash]['validate_field_name']);
   }
+
 }

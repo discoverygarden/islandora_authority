@@ -147,4 +147,5 @@ abstract class IslandoraAuthorityAbstractController {
   public function fieldHasValidation() {
     return FALSE;
   }
+
 }
