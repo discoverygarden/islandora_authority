@@ -110,13 +110,15 @@ class IslandoraAuthorityOCLCFastController extends IslandoraAuthoritySolrControl
         'requires' => array(
           static::ID_FIELD,
         ),
-        'callable' => function (array $doc) {
-          return format_string('http://experimental.worldcat.org/fast/!id', array(
-            '!id' => $doc[static::ID_FIELD],
-          ));
-        },
       ),
     );
+    // XXX: Some version of coder have issues with anonymous functions inline
+    // in arrays... so let's add it in here instead.
+    $info[static::ID_FIELD . '_uri']['callable'] = function (array $doc) {
+      return format_string('http://experimental.worldcat.org/fast/!id', array(
+        '!id' => $doc[static::ID_FIELD],
+      ));
+    };
 
     $to_return = array_intersect_key($info, drupal_map_assoc($fields));
     foreach ($to_return as $field) {
