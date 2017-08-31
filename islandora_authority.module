@@ -58,12 +58,16 @@ function islandora_authority_menu() {
 
   $items['islandora/authority'] = array(
     'page callback' => 'islandora_authority_autocomplete',
+    // XXX: Access should be enforced inside the underlying controllers, as
+    // necessary.
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
     'file' => 'includes/callback.inc',
   );
   $items['islandora/authority-validate'] = array(
     'page callback' => 'islandora_authority_validate',
+    // XXX: Access should be enforced inside the underlying controllers, as
+    // necessary.
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
     'file' => 'includes/callback.inc',
@@ -95,4 +99,13 @@ function islandora_authority_theme() {
 function islandora_authority_load_theme_file($element, &$form_state, $complete_form) {
   form_load_include($form_state, 'inc', 'islandora_authority', 'theme/theme');
   return $element;
+}
+
+/**
+ * Implements hook_islandora_authority_controllers().
+ */
+function islandora_authority_islandora_authority_controllers() {
+  return array(
+    IslandoraAuthoritySolrController::NAME => 'IslandoraAuthoritySolrController',
+  );
 }

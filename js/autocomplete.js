@@ -1,3 +1,11 @@
+/**
+ * @file
+ * Adapted from Drupal's core autocomplete (minimal change).
+ *
+ * Minimal change, implying some coding standards stuff we don't want to touch,
+ * in case we want to update this code from upstream at some point.
+ */
+
 (function ($) {
 
 /**
