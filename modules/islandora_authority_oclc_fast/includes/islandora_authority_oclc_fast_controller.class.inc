@@ -73,7 +73,7 @@ class IslandoraAuthorityOCLCFastController extends IslandoraAuthoritySolrControl
     }
 
     $matches = array();
-    $decoded_respoonse = drupal_json_decode($response->data);
+    $decoded_response = drupal_json_decode($response->data);
     foreach ($decoded_response['response']['docs'] as $doc) {
       foreach ($pseudo_field_info as $name => $info) {
         // XXX: Add our pseudo-field(s).
