@@ -1,0 +1,15 @@
+<?php
+
+/**
+ * @file
+ * General hook implementations.
+ */
+
+/**
+ * Implements hook_islandora_authority_controllers().
+ */
+function islandora_authority_aat_islandora_authority_controllers() {
+  return array(
+    IslandoraAuthorityAATController::NAME => 'IslandoraAuthorityAATController',
+  );
+}
