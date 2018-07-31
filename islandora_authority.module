@@ -46,6 +46,18 @@ function islandora_authority_element_info() {
       'islandora_authority_element_process',
     ),
   );
+  $elements['islandora_authority_select'] = array(
+    '#input' => TRUE,
+    '#multiple' => FALSE,
+    '#process' => array(
+      'form_process_select',
+      'ajax_process_form',
+      'islandora_authority_load_theme_file',
+      'islandora_authority_element_process',
+    ),
+    '#theme' => 'select',
+    '#theme_wrappers' => array('form_element'),
+  );
 
   return $elements;
 }
